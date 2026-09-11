@@ -324,7 +324,7 @@ input,select,textarea{font-family:inherit;font-size:15px;}
    ========================================================================= */
 
 /* ---------------- 常量 ---------------- */
-const MODES = ['N1','N2','N3','N4','N5','考研日语203','日语专业四级',
+const MODES = ['N1','N2','N3－N5','考研日语203','日语专业四级',
                '日语专业八级','大学日语四级','大学日语六级'];
 
 /* 开发者密钥：所有模式共用，只有输入正确才允许导入 */
@@ -794,6 +794,26 @@ function saveDB(){
 }
 
 let DB = loadDB();
+/* 数据迁移：把旧版 N3 / N4 / N5 的词条合并进 N3－N5 */
+(function migrateModes(){
+  const oldKeys = ['N3','N4','N5'];
+  const newKey  = 'N3－N5';
+  const hasOld  = oldKeys.some(k => DB[k] && DB[k].length);
+  if (!hasOld) return;
+
+  const seen = new Set();
+  const merged = [];
+  (DB[newKey] || []).concat(
+    oldKeys.reduce((a, k) => a.concat(DB[k] || []), [])
+  ).forEach(e => {
+    const key = e.w + '|' + e.r;
+    if (!seen.has(key)){ seen.add(key); merged.push(e); }
+  });
+
+  DB[newKey] = merged;
+  oldKeys.forEach(k => delete DB[k]);
+  saveDB();
+})();
 
 /* 首次运行：填充日语专业四级种子词库 */
 if (!DB['日语专业四级'] || !DB['日语专业四级'].length){
@@ -849,11 +869,14 @@ function startQuiz(){
   let n = parseInt(document.getElementById('groupSize').value, 10);
   if (isNaN(n)) n = 20;
 
-  shuffle(list);
-  const size = (n <= 0 || n > list.length) ? list.length : n;
+  /* —— 双保险洗牌：先整体打乱，再抽题后二次打乱 —— */
+shuffle(list);
+const size = (n <= 0 || n > list.length) ? list.length : n;
+const picked = list.slice(0, size);
+shuffle(picked);            // 二次洗牌，彻底消除任何顺序残留
 
   state.mode   = currentMode;
-  state.queue  = list.slice(0, size);
+  state.queue  = picked;
   state.idx    = 0;
   state.phase  = 1;
   state.wrong  = [];
