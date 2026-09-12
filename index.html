@@ -162,7 +162,22 @@ input,select,textarea{font-family:inherit;font-size:15px;}
 .mt14{margin-top:14px;}
 .hint{font-size:12px;color:var(--muted);line-height:1.75;}
 
-.toast{
+/* ---------- 编辑页 ---------- */
+.edit-list{max-height:60vh;overflow-y:auto;}
+.edit-row{
+  display:grid;grid-template-columns:32px 1.1fr 1fr 1.4fr 46px;
+  gap:6px;padding:8px 6px;border-bottom:1px solid #f0f1f3;align-items:center;font-size:13px;
+}
+.edit-row input[type=text]{
+  width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:7px;
+  font-size:13px;background:#fbfbfc;
+}
+.edit-row .er-w{font-size:15px;font-weight:600;padding-left:4px;word-break:break-all;}
+.edit-row .er-del{
+  color:var(--red);font-size:12px;padding:5px 8px;border-radius:7px;
+  background:#fdeceb;font-weight:600;
+}
+.edit-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);}.toast{
   position:fixed;left:50%;bottom:44px;transform:translate(-50%,16px);
   background:rgba(28,31,35,.9);color:#fff;padding:11px 22px;border-radius:24px;
   font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:200;white-space:nowrap;
@@ -206,7 +221,12 @@ input,select,textarea{font-family:inherit;font-size:15px;}
       <div class="stat-line"><span>当前模式</span><span id="homeModeName">—</span></div>
       <div class="stat-line"><span>收录词数</span><span id="homeModeCount">0</span></div>
       <button class="btn btn-ghost mt10" id="btnImport">快速导入</button>
-    </div>
+    </div><div class="card">
+  <h3>学习工具</h3>
+  <button class="btn btn-ghost mt10" id="btnWrongBook">长期错词本</button>
+  <button class="btn btn-ghost mt10" id="btnEditor">编辑当前词库</button>
+  <button class="btn btn-ghost mt10" id="btnStats">学习报告</button>
+</div>
   </div>
 </section>
 
@@ -307,6 +327,96 @@ input,select,textarea{font-family:inherit;font-size:15px;}
 </section>
 
 <!-- 暂停遮罩 -->
+<!-- ============ 长期错词本 ============ -->
+<section id="screen-wrongbook" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" id="wbBack">‹ 返回</button>
+    <h2>长期错词本</h2>
+    <span style="width:70px"></span>
+  </div>
+  <div class="pad">
+    <div class="card">
+      <div class="stat-line"><span>当前模式</span><span id="wbMode">—</span></div>
+      <div class="stat-line"><span>错词总数</span><span id="wbCount">0</span></div>
+      <button class="btn btn-primary mt10" id="wbReview">复习本模式错词</button>
+      <button class="btn btn-ghost mt10" id="wbReviewAll">复习全部模式错词</button>
+    </div>
+    <div class="card">
+      <div class="wrong-list" id="wbList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 词库编辑 ============ -->
+<section id="screen-editor" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" id="edBack">‹ 返回</button>
+    <h2>编辑词库</h2>
+    <span style="width:70px"></span>
+  </div>
+  <div class="pad">
+    <div class="card">
+      <div class="stat-line"><span>当前模式</span><span id="edMode">—</span></div>
+      <div class="stat-line"><span>词条总数</span><span id="edCount">0</span></div>
+      <input class="input mt10" id="edSearch" placeholder="搜索单词 / 读音 / 释义…">
+      <div class="row mt10">
+        <button class="btn btn-ghost" id="edSelectAll">全选当前显示</button>
+        <button class="btn btn-ghost" id="edSelectNone">取消全选</button>
+      </div>
+      <div class="row mt10">
+        <input type="number" class="input" id="edDelCount" min="0" placeholder="输入 N，删除前 N 条">
+        <button class="btn btn-ghost" id="edDelTop">删除</button>
+      </div>
+      <div class="row mt10">
+        <button class="btn btn-primary" id="edSave">保存修改</button>
+        <button class="btn btn-ghost" id="edDeleteSel" style="color:var(--red)">删除选中</button>
+      </div>
+      <div class="status" id="edStatus"></div>
+    </div>
+    <div class="card">
+      <div class="edit-list" id="edList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 学习报告 ============ -->
+<section id="screen-stats" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" id="stBack">‹ 返回</button>
+    <h2>学习报告</h2>
+    <span style="width:70px"></span>
+  </div>
+  <div class="pad">
+    <div class="card">
+      <h3>今日</h3>
+      <div class="stat-line"><span>打开次数</span><span id="stTodayOpens">0</span></div>
+      <div class="stat-line"><span>答题数</span><span id="stTodayQuizzed">0</span></div>
+      <div class="stat-line"><span>错词数</span><span id="stTodayWrong">0</span></div>
+    </div>
+    <div class="card">
+      <h3>本月累计</h3>
+      <div class="stat-line"><span>学习天数</span><span id="stMonthDays">0</span></div>
+      <div class="stat-line"><span>答题总数</span><span id="stMonthQuizzed">0</span></div>
+      <div class="stat-line"><span>错词总数</span><span id="stMonthWrong">0</span></div>
+    </div>
+    <div class="card">
+      <h3>每日明细</h3>
+      <div class="wrong-list" id="stDailyList"></div>
+    </div>
+    <button class="btn btn-ghost" id="stReset" style="color:var(--red)">清空学习记录</button>
+  </div>
+</section>
+
+<!-- ============ 每日 22:00 汇报 ============ -->
+<div class="overlay" id="reportOverlay">
+  <div class="overlay-card" style="max-width:360px">
+    <div class="pause-icon">🌙</div>
+    <h3>今日の学習報告</h3>
+    <div id="reportBody" style="text-align:left;font-size:14px;line-height:2;color:#3c4249;margin:14px 0"></div>
+    <p style="font-size:15px;color:var(--primary);font-weight:600;letter-spacing:.08em">今日も、お疲れ</p>
+    <button class="btn btn-primary" id="reportClose">确 认</button>
+  </div>
+</div>
 <div class="overlay" id="pauseOverlay">
   <div class="overlay-card">
     <div class="pause-icon">⏸</div>
@@ -875,8 +985,10 @@ const size = (n <= 0 || n > list.length) ? list.length : n;
 const picked = list.slice(0, size);
 shuffle(picked);            // 二次洗牌，彻底消除任何顺序残留
 
-  state.mode   = currentMode;
-  state.queue  = picked;
+  state.mode       = currentMode;
+  state.targetMode = currentMode;
+  state.isReview   = false;
+  state.queue      = list.slice(0, size);
   state.idx    = 0;
   state.phase  = 1;
   state.wrong  = [];
@@ -919,8 +1031,8 @@ function renderCard(){
 }
 
 function goNextCard(){
-  state.idx++;
-  state.phase = 1;
+  bumpStat('quizzed');
+  state.idx++;  state.phase = 1;
   if (state.idx >= state.queue.length){ finishQuiz(); return; }
   renderCard();
 }
@@ -930,19 +1042,30 @@ function onKnown(){   if (state.phase === 1){ state.phase = 2; renderCard(); } }
 function onUnknown(){ if (state.phase === 1){ state.phase = 2; renderCard(); } }
 
 /* 程序2 → 程序1 */
-function onNext(){ if (state.phase === 2) goNextCard(); }
+function onNext(){
+  if (state.phase !== 2) return;
+  const cur = state.queue[state.idx];
+  if (cur && state.isReview){
+    weakenWrong(cur._mode || state.targetMode, cur);
+  }
+  goNextCard();
+}
 
 function onWrong(){
   if (state.phase !== 2) return;
   const cur = state.queue[state.idx];
   if (cur){
-    const dup = state.wrong.some(e => e.w === cur.w && e.r === cur.r);
-    if (!dup) state.wrong.push(cur);
-    toast('已加入错词本');
+    const mode = cur._mode || state.targetMode;
+    addWrong(mode, cur);
+    bumpStat('wrong');
+    if (!state.isReview){
+      const dup = state.wrong.some(e => e.w === cur.w && e.r === cur.r);
+      if (!dup) state.wrong.push(cur);
+    }
+    toast('已加入长期错词本');
   }
   goNextCard();
 }
-
 /* ---------------- 暂停 / 继续 / 终止 ---------------- */
 function togglePause(){
   if (!document.getElementById('screen-quiz').classList.contains('active')) return;
@@ -1157,7 +1280,309 @@ function confirmImport(){
   setStatus('导入成功：新增 ' + added + ' 条，当前「' + mode + '」共 ' + exist.length + ' 条', 'ok');
   clearPreview();
 }
+/* =========================================================================
+   长期错词本
+   ========================================================================= */
+const LS_WRONG = 'shunji_wrong_v1';
+function loadWrongDB(){
+  try{
+    const raw = localStorage.getItem(LS_WRONG);
+    if (raw){
+      const d = JSON.parse(raw);
+      if (d && typeof d === 'object') return d;
+    }
+  }catch(e){}
+  return {};
+}
+let WRONG_DB = loadWrongDB();
+function saveWrongDB(){
+  try{ localStorage.setItem(LS_WRONG, JSON.stringify(WRONG_DB)); }catch(e){}
+}
 
+function addWrong(mode, entry){
+  if (!mode || !entry) return;
+  if (!WRONG_DB[mode]) WRONG_DB[mode] = [];
+  const list = WRONG_DB[mode];
+  const found = list.find(e => e.w === entry.w && e.r === entry.r);
+  if (found){
+    found.count = (found.count || 1) + 1;
+    found.ts = Date.now();
+    if (entry.m) found.m = entry.m;
+  } else {
+    list.push({ w: entry.w, r: entry.r, m: entry.m, count: 1, ts: Date.now() });
+  }
+  saveWrongDB();
+}
+
+function weakenWrong(mode, entry){
+  if (!mode || !WRONG_DB[mode]) return;
+  const list = WRONG_DB[mode];
+  const i = list.findIndex(e => e.w === entry.w && e.r === entry.r);
+  if (i < 0) return;
+  list[i].count = (list[i].count || 1) - 1;
+  if (list[i].count <= 0) list.splice(i, 1);
+  if (!list.length) delete WRONG_DB[mode];
+  saveWrongDB();
+}
+
+function removeWrong(mode, w, r){
+  if (!WRONG_DB[mode]) return;
+  WRONG_DB[mode] = WRONG_DB[mode].filter(e => !(e.w === w && e.r === r));
+  if (!WRONG_DB[mode].length) delete WRONG_DB[mode];
+  saveWrongDB();
+}
+
+function wrongCountOf(mode){ return (WRONG_DB[mode] || []).length; }
+
+/* =========================================================================
+   学习统计
+   ========================================================================= */
+const LS_STATS = 'shunji_stats_v1';
+function todayStr(d){
+  d = d || new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dd;
+}
+function loadStats(){
+  try{
+    const raw = localStorage.getItem(LS_STATS);
+    if (raw){
+      const d = JSON.parse(raw);
+      if (d && typeof d === 'object'){
+        d.days = d.days || {};
+        d.lastReport = d.lastReport || '';
+        return d;
+      }
+    }
+  }catch(e){}
+  return { days: {}, lastReport: '' };
+}
+let STATS = loadStats();
+function saveStats(){
+  try{ localStorage.setItem(LS_STATS, JSON.stringify(STATS)); }catch(e){}
+}
+function bumpStat(field, n){
+  const t = todayStr();
+  if (!STATS.days[t]) STATS.days[t] = { opens: 0, quizzed: 0, wrong: 0 };
+  STATS.days[t][field] = (STATS.days[t][field] || 0) + (n || 1);
+  saveStats();
+}
+
+/* =========================================================================
+   22:00 每日汇报
+   ========================================================================= */
+function showDailyReport(){
+  const t = todayStr();
+  const d = STATS.days[t] || { opens: 0, quizzed: 0, wrong: 0 };
+  const ym = t.slice(0, 7);
+  let mDays = 0, mQuizzed = 0, mWrong = 0;
+  Object.keys(STATS.days).forEach(k => {
+    if (k.startsWith(ym)){
+      const x = STATS.days[k];
+      mDays++;
+      mQuizzed += x.quizzed || 0;
+      mWrong   += x.wrong   || 0;
+    }
+  });
+  document.getElementById('reportBody').innerHTML =
+    '<div>📅 ' + t + '</div>' +
+    '<div>🔁 今日打开 <b>' + (d.opens   || 0) + '</b> 次</div>' +
+    '<div>✍️ 今日答题 <b>' + (d.quizzed || 0) + '</b> 题</div>' +
+    '<div>📕 今日错词 <b>' + (d.wrong   || 0) + '</b> 个</div>' +
+    '<div style="margin-top:10px;padding-top:10px;border-top:1px solid #eee">' +
+    '📊 本月学习 <b>' + mDays + '</b> 天 · 答题 <b>' + mQuizzed +
+    '</b> 题 · 错词 <b>' + mWrong + '</b> 个</div>';
+  document.getElementById('reportOverlay').classList.add('show');
+}
+function checkReport(){
+  const now = new Date();
+  const t = todayStr(now);
+  if (now.getHours() >= 22 && STATS.lastReport !== t){
+    showDailyReport();
+    STATS.lastReport = t;
+    saveStats();
+  }
+}
+
+/* =========================================================================
+   错词本页面渲染
+   ========================================================================= */
+function openWrongBook(){
+  document.getElementById('wbMode').textContent = currentMode;
+  document.getElementById('wbCount').textContent = wrongCountOf(currentMode);
+  renderWrongPage();
+  show('wrongbook');
+}
+function renderWrongPage(){
+  const list = document.getElementById('wbList');
+  const arr = WRONG_DB[currentMode] || [];
+  if (!arr.length){
+    list.innerHTML = '<div class="empty">该模式错词本为空</div>';
+    return;
+  }
+  list.innerHTML = arr.map((e, i) =>
+    '<div class="wrong-item">' +
+      '<div class="wi-idx">' + (i + 1) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="wi-word">' + buildRuby(e.w, e.r) + '</div>' +
+        '<div class="wi-meaning">' + esc(e.m || '（无释义）') +
+          ' <span style="color:#b0b6bd;font-size:12px">×' + (e.count || 1) + '</span></div>' +
+      '</div>' +
+      '<button class="er-del" data-w="' + esc(e.w) + '" data-r="' + esc(e.r) + '">删</button>' +
+    '</div>'
+  ).join('');
+}
+
+/* =========================================================================
+   错词复习模式
+   ========================================================================= */
+function startReview(mode){
+  let list = [];
+  if (mode === '__ALL__'){
+    Object.keys(WRONG_DB).forEach(k => {
+      (WRONG_DB[k] || []).forEach(e => {
+        list.push(Object.assign({}, e, { _mode: k }));
+      });
+    });
+  } else {
+    (WRONG_DB[mode] || []).forEach(e => {
+      list.push(Object.assign({}, e, { _mode: mode }));
+    });
+  }
+  if (!list.length){ toast('错词本为空'); return; }
+
+  shuffle(list);
+  let n = parseInt(document.getElementById('groupSize').value, 10);
+  if (isNaN(n) || n <= 0 || n > list.length) n = list.length;
+
+  state.mode       = (mode === '__ALL__') ? '错词复习（全部）' : (mode + ' · 复习');
+  state.targetMode = mode;
+  state.isReview   = true;
+  state.queue      = list.slice(0, n);
+  state.idx        = 0;
+  state.phase      = 1;
+  state.wrong      = [];
+  state.total      = state.queue.length;
+  state.paused     = false;
+
+  document.getElementById('quizMode').textContent = state.mode;
+  document.getElementById('pauseOverlay').classList.remove('show');
+  show('quiz');
+  renderCard();
+}
+
+/* =========================================================================
+   词库编辑
+   ========================================================================= */
+let editorMode = '';
+let editorEntries = [];
+let editorSelected = new Set();
+
+function openEditor(){
+  editorMode = currentMode;
+  editorEntries = (DB[editorMode] || []).map(e => Object.assign({}, e));
+  editorSelected = new Set();
+  document.getElementById('edMode').textContent = editorMode;
+  document.getElementById('edCount').textContent = editorEntries.length;
+  document.getElementById('edSearch').value = '';
+  document.getElementById('edDelCount').value = '';
+  setEdStatus('');
+  renderEditor();
+  show('editor');
+}
+function setEdStatus(msg, cls){
+  const el = document.getElementById('edStatus');
+  el.textContent = msg || '';
+  el.className = 'status' + (cls ? ' ' + cls : '');
+}
+function renderEditor(){
+  const kw = document.getElementById('edSearch').value.trim().toLowerCase();
+  const list = document.getElementById('edList');
+  const rows = [];
+  editorEntries.forEach((e, i) => {
+    if (kw){
+      const hay = (e.w + ' ' + e.r + ' ' + e.m).toLowerCase();
+      if (hay.indexOf(kw) < 0) return;
+    }
+    const checked = editorSelected.has(i) ? ' checked' : '';
+    rows.push(
+      '<div class="edit-row" data-idx="' + i + '">' +
+        '<input type="checkbox" class="er-ck"' + checked + '>' +
+        '<div class="er-w">' + esc(e.w) + '</div>' +
+        '<input type="text" class="er-r" value="' + esc(e.r) + '" placeholder="假名">' +
+        '<input type="text" class="er-m" value="' + esc(e.m) + '" placeholder="释义">' +
+        '<button class="er-del">删</button>' +
+      '</div>'
+    );
+  });
+  list.innerHTML = rows.length ? rows.join('') : '<div class="empty">没有匹配的词条</div>';
+}
+function collectEdits(){
+  document.querySelectorAll('#edList .edit-row').forEach(row => {
+    const i = parseInt(row.dataset.idx, 10);
+    if (isNaN(i) || !editorEntries[i]) return;
+    const r = row.querySelector('.er-r');
+    const m = row.querySelector('.er-m');
+    if (r) editorEntries[i].r = r.value.trim();
+    if (m) editorEntries[i].m = m.value.trim();
+  });
+}
+function saveEditor(){
+  collectEdits();
+  DB[editorMode] = editorEntries.map(e => Object.assign({}, e));
+  saveDB();
+  document.getElementById('edCount').textContent = editorEntries.length;
+  refreshHome();
+  setEdStatus('已保存：' + editorEntries.length + ' 条', 'ok');
+}
+function deleteSelected(){
+  collectEdits();
+  if (!editorSelected.size){ setEdStatus('没有选中任何词条', 'err'); return; }
+  const del = Array.from(editorSelected).sort((a, b) => b - a);
+  del.forEach(i => { if (editorEntries[i]) editorEntries.splice(i, 1); });
+  editorSelected = new Set();
+  renderEditor();
+  setEdStatus('已删除 ' + del.length + ' 条（未保存，点「保存修改」生效）', 'ok');
+}
+
+/* =========================================================================
+   学习报告页
+   ========================================================================= */
+function openStats(){
+  const t = todayStr();
+  const d = STATS.days[t] || { opens: 0, quizzed: 0, wrong: 0 };
+  const ym = t.slice(0, 7);
+  let mDays = 0, mQuizzed = 0, mWrong = 0;
+  const dailyRows = [];
+  Object.keys(STATS.days).sort().reverse().forEach(k => {
+    const x = STATS.days[k];
+    if (k.startsWith(ym)){
+      mDays++;
+      mQuizzed += x.quizzed || 0;
+      mWrong   += x.wrong   || 0;
+    }
+    dailyRows.push(
+      '<div class="stat-line"><span>' + k + '</span>' +
+      '<span>开 ' + (x.opens || 0) + ' · 答 ' + (x.quizzed || 0) +
+      ' · 错 ' + (x.wrong || 0) + '</span></div>'
+    );
+  });
+
+  document.getElementById('stTodayOpens').textContent   = d.opens   || 0;
+  document.getElementById('stTodayQuizzed').textContent = d.quizzed || 0;
+  document.getElementById('stTodayWrong').textContent   = d.wrong   || 0;
+
+  document.getElementById('stMonthDays').textContent    = mDays;
+  document.getElementById('stMonthQuizzed').textContent = mQuizzed;
+  document.getElementById('stMonthWrong').textContent   = mWrong;
+
+  document.getElementById('stDailyList').innerHTML =
+    dailyRows.length ? dailyRows.join('') : '<div class="empty">暂无记录</div>';
+
+  show('stats');
+}
 /* =========================================================================
    事件绑定
    ========================================================================= */
@@ -1245,7 +1670,106 @@ function bind(){
     clearPreview();
     setStatus('');
   });
+/* --- 学习工具入口 --- */
+document.getElementById('btnWrongBook').addEventListener('click', openWrongBook);
+document.getElementById('btnEditor').addEventListener('click', openEditor);
+document.getElementById('btnStats').addEventListener('click', openStats);
 
+/* --- 错词本页 --- */
+document.getElementById('wbBack').addEventListener('click', () => {
+  refreshHome(); show('home');
+});
+document.getElementById('wbReview').addEventListener('click', () => {
+  if (!wrongCountOf(currentMode)){ toast('本模式错词本为空'); return; }
+  startReview(currentMode);
+});
+document.getElementById('wbReviewAll').addEventListener('click', () => {
+  const total = Object.keys(WRONG_DB).reduce((a, k) => a + WRONG_DB[k].length, 0);
+  if (!total){ toast('所有模式错词本都为空'); return; }
+  startReview('__ALL__');
+});
+document.getElementById('wbList').addEventListener('click', e => {
+  const btn = e.target.closest('.er-del');
+  if (!btn) return;
+  removeWrong(currentMode, btn.dataset.w, btn.dataset.r);
+  document.getElementById('wbCount').textContent = wrongCountOf(currentMode);
+  renderWrongPage();
+  refreshHome();
+});
+
+/* --- 编辑页 --- */
+document.getElementById('edBack').addEventListener('click', () => {
+  collectEdits();
+  const changed = JSON.stringify(editorEntries) !== JSON.stringify(DB[editorMode] || []);
+  if (changed && confirm('有未保存的修改，是否保存后返回？')){
+    saveEditor();
+  }
+  refreshHome(); show('home');
+});
+document.getElementById('edSearch').addEventListener('input', renderEditor);
+document.getElementById('edSelectAll').addEventListener('click', () => {
+  const kw = document.getElementById('edSearch').value.trim().toLowerCase();
+  editorEntries.forEach((e, i) => {
+    if (!kw){ editorSelected.add(i); return; }
+    const hay = (e.w + ' ' + e.r + ' ' + e.m).toLowerCase();
+    if (hay.indexOf(kw) >= 0) editorSelected.add(i);
+  });
+  renderEditor();
+});
+document.getElementById('edSelectNone').addEventListener('click', () => {
+  editorSelected = new Set();
+  renderEditor();
+});
+document.getElementById('edList').addEventListener('change', e => {
+  const ck = e.target.closest('.er-ck');
+  if (!ck) return;
+  const row = ck.closest('.edit-row');
+  const i = parseInt(row.dataset.idx, 10);
+  if (ck.checked) editorSelected.add(i); else editorSelected.delete(i);
+});
+document.getElementById('edList').addEventListener('click', e => {
+  const btn = e.target.closest('.er-del');
+  if (!btn) return;
+  const row = btn.closest('.edit-row');
+  const i = parseInt(row.dataset.idx, 10);
+  if (isNaN(i)) return;
+  editorEntries.splice(i, 1);
+  editorSelected = new Set();
+  document.getElementById('edCount').textContent = editorEntries.length;
+  renderEditor();
+  setEdStatus('已删除 1 条（未保存，点「保存修改」生效）', 'ok');
+});
+document.getElementById('edDelTop').addEventListener('click', () => {
+  collectEdits();
+  const n = parseInt(document.getElementById('edDelCount').value, 10);
+  if (isNaN(n) || n <= 0){ setEdStatus('请输入要删除的数量（正数）', 'err'); return; }
+  const real = Math.min(n, editorEntries.length);
+  editorEntries.splice(0, real);
+  editorSelected = new Set();
+  document.getElementById('edCount').textContent = editorEntries.length;
+  document.getElementById('edDelCount').value = '';
+  renderEditor();
+  setEdStatus('已删除前 ' + real + ' 条（未保存，点「保存修改」生效）', 'ok');
+});
+document.getElementById('edSave').addEventListener('click', saveEditor);
+document.getElementById('edDeleteSel').addEventListener('click', deleteSelected);
+
+/* --- 学习报告页 --- */
+document.getElementById('stBack').addEventListener('click', () => {
+  refreshHome(); show('home');
+});
+document.getElementById('stReset').addEventListener('click', () => {
+  if (!confirm('确定清空所有学习记录？此操作不可恢复。')) return;
+  STATS = { days: {}, lastReport: '' };
+  saveStats();
+  openStats();
+  toast('学习记录已清空');
+});
+
+/* --- 22:00 汇报关闭 --- */
+document.getElementById('reportClose').addEventListener('click', () => {
+  document.getElementById('reportOverlay').classList.remove('show');
+});
   /* --- 键盘快捷键 --- */
   document.addEventListener('keydown', e => {
     if (!document.getElementById('screen-quiz').classList.contains('active')) return;
@@ -1262,8 +1786,12 @@ function bind(){
 }
 
 /* ---------------- 启动 ---------------- */
+/* ---------------- 启动 ---------------- */
 bind();
 refreshHome();
+bumpStat('opens');                 /* 每次打开网页记一次学习 */
+checkReport();                     /* 打开时若已过 22 点且今日未汇报，立即汇报 */
+setInterval(checkReport, 60000);   /* 页面常开时，每分钟检查一次 */
 </script>
 </body>
 </html>
