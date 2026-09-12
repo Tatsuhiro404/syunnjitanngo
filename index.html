@@ -183,17 +183,23 @@ input,select,textarea{font-family:inherit;font-size:15px;}
   font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:200;white-space:nowrap;
 }
 .toast.show{opacity:1;transform:translate(-50%,0);}
+
+.auth-wrap{max-width:430px;margin:0 auto;padding:40px 16px}.auth-card{background:#fff;border-radius:20px;padding:24px;box-shadow:0 1px 2px rgba(16,24,40,.05),0 10px 28px -14px rgba(16,24,40,.18)}.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}.auth-tab{padding:10px;border-radius:10px;background:#f2f3f5;font-size:14px;font-weight:600}.auth-tab.active{background:#eef3ff;color:var(--primary)}.auth-status{min-height:22px;margin-top:10px;font-size:13px;color:var(--muted)}.auth-status.err{color:var(--red)}.auth-status.ok{color:var(--green)}.userbar{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px;font-size:12px;color:var(--muted)}.userbar b{color:var(--text)}.role-badge{display:inline-block;padding:3px 7px;border-radius:10px;background:#eef3ff;color:var(--primary);font-size:11px}.import-note{padding:10px 12px;border-radius:10px;background:#f7f8fa;color:#666;font-size:12px;line-height:1.7;margin-top:10px}
+#importKey{display:none}
 </style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <!-- ============ 主页面 ============ -->
-<section id="screen-home" class="screen active">
+<section id="screen-auth" class="screen active"><div class="auth-wrap"><div class="home-head" style="padding-top:10px"><h1>瞬時単語TEST</h1><p>INSTANT VOCABULARY TEST</p></div><div class="auth-card"><div class="auth-tabs"><button class="auth-tab active" id="authUserTab">用户登录</button><button class="auth-tab" id="authDevTab">开发者登录</button></div><input class="input" id="authId" autocomplete="username" placeholder="ID（唯一用户名）"><input class="input mt10" id="authPassword" type="password" autocomplete="current-password" placeholder="Password"><input class="input mt10" id="authPassword2" type="password" autocomplete="new-password" placeholder="再次输入 Password" style="display:none"><button class="btn btn-primary mt14" id="authSubmit">登 录</button><button class="btn btn-ghost mt10" id="authRegister">注册新账号</button><div class="auth-status" id="authStatus"></div><div class="hint mt10" id="authHint">普通用户可使用公共词库，并创建、编辑自己的个人词库。</div></div></div></section><section id="screen-home" class="screen">
   <div class="home-head">
     <h1>瞬時単語TEST</h1>
     <p>INSTANT VOCABULARY TEST</p>
   </div>
   <div class="pad">
+    <div class="userbar"><span>已登录：<b id="currentUserName">—</b> <span class="role-badge" id="currentUserRole">用户</span></span><button class="icon-btn" id="btnLogout">退出登录</button></div>
     <div class="card">
       <h3>选择模式</h3>
       <div class="mode-grid" id="modeGrid"></div>
@@ -287,10 +293,7 @@ input,select,textarea{font-family:inherit;font-size:15px;}
     <div class="card">
       <h3>1 · 选择目标模式</h3>
       <select class="select" id="importMode"></select>
-      <h3 class="mt14">2 · 输入开发者密钥</h3>
-      <input class="input" type="password" id="importKey"
-             inputmode="numeric" pattern="[0-9]*" maxlength="6"
-             autocomplete="off" placeholder="请输入6位数字开发者密钥">
+      <h3 class="mt14">2 · 词库设置</h3><select class="select" id="importTargetType"><option value="private">我的个人词库</option><option value="public">公共词库（仅开发者）</option></select><input class="input mt10" id="importPersonalName" placeholder="个人词库名称，例如：N2 重点词" maxlength="60"><div class="import-note" id="importPermissionNote">普通用户只能写入自己的个人词库；公共词库由开发者维护。</div>
     </div>
 
     <div class="card">
@@ -438,7 +441,7 @@ const MODES = ['N1','N2','N3－N5','考研日语203','日语专业四级',
                '日语专业八级','大学日语四级','大学日语六级'];
 
 /* 开发者密钥：所有模式共用，只有输入正确才允许导入 */
-const DEV_KEY = '051025';
+const DEV_KEY = '';
 
 const LS_KEY = 'shunji_vocab_v1';
 
@@ -1786,6 +1789,39 @@ document.getElementById('reportClose').addEventListener('click', () => {
 }
 
 /* ---------------- 启动 ---------------- */
+/* ==================== 云端账号 / 数据层覆盖 ==================== */
+const SHUNJI_URL=window.SHUNJI_SUPABASE_CONFIG?.url||'';
+const SHUNJI_ANON=window.SHUNJI_SUPABASE_CONFIG?.anonKey||'';
+let sb=null, SESSION_USER=null, PROFILE=null, VOCABS=[], VOCAB_BY_NAME={};
+function isAdmin(){return PROFILE?.role==='admin'}
+function currentVocab(){return VOCAB_BY_NAME[currentMode]||null}
+function canEditVocab(v){return !!(SESSION_USER&&v&&((v.type==='private'&&v.owner_id===SESSION_USER.id)||isAdmin()))}
+function renderModes(){const grid=document.getElementById('modeGrid');const names=VOCABS.length?VOCABS.map(v=>v.name):MODES;grid.innerHTML=names.map(m=>{const v=VOCAB_BY_NAME[m],tag=v?(v.type==='private'?'我的':'公共'):'本地',c=(DB[m]||[]).length;return '<button class="mode-chip'+(m===currentMode?' active':'')+'" data-mode="'+esc(m)+'"><span>'+esc(m)+'</span><span class="mc-count">'+c+'词 · '+tag+'</span></button>'}).join('')}
+function saveDB(){try{localStorage.setItem('shunji_vocab_cache_v2',JSON.stringify(DB))}catch(e){}}
+async function loadCloudData(){const {data:vs,error:ve}=await sb.from('vocabularies').select('*').order('created_at');if(ve)throw ve;VOCABS=vs||[];VOCAB_BY_NAME={};VOCABS.forEach(v=>VOCAB_BY_NAME[v.name]=v);DB={};const ids=VOCABS.map(v=>v.id);if(ids.length){const {data:ws,error:we}=await sb.from('words').select('vocabulary_id,w,r,m,position').in('vocabulary_id',ids).order('position');if(we)throw we;(ws||[]).forEach(x=>{const v=VOCABS.find(q=>q.id===x.vocabulary_id);if(v)(DB[v.name]||=[]).push({w:x.w,r:x.r||'',m:x.m||''})})}saveDB()}
+async function createPrivateVocab(name){name=name.trim();if(!name)throw Error('请输入个人词库名称');if(VOCAB_BY_NAME[name])throw Error('词库名称已存在');const {data,error}=await sb.from('vocabularies').insert({name,type:'private',owner_id:SESSION_USER.id}).select().single();if(error)throw error;VOCABS.push(data);VOCAB_BY_NAME[name]=data;DB[name]=[];return data}
+async function appendCloudWords(v,entries){if(!canEditVocab(v))throw Error('没有权限修改此词库');const base=(DB[v.name]||[]).length;const rows=entries.map((e,i)=>({vocabulary_id:v.id,w:e.w,r:e.r||'',m:e.m||'',position:base+i}));const {error}=await sb.from('words').upsert(rows,{onConflict:'vocabulary_id,w,r',ignoreDuplicates:true});if(error)throw error;await loadCloudData()}
+async function replaceCloudWords(v,entries){if(!canEditVocab(v))throw Error('没有权限修改此词库');let q=sb.from('words').delete().eq('vocabulary_id',v.id);const {error:de}=await q;if(de)throw de;const rows=entries.map((e,i)=>({vocabulary_id:v.id,w:e.w,r:e.r||'',m:e.m||'',position:i}));if(rows.length){const {error}=await sb.from('words').insert(rows);if(error)throw error}await loadCloudData()}
+async function confirmImport(){if(!SESSION_USER){setStatus('请先登录','err');return}if(!previewEntries.length){setStatus('没有可导入的内容','err');return}try{const type=document.getElementById('importTargetType').value;let v;if(type==='public'){if(!isAdmin()){setStatus('只有开发者可以修改公共词库','err');return}v=VOCAB_BY_NAME[document.getElementById('importMode').value]}else{const name=document.getElementById('importPersonalName').value.trim();v=VOCAB_BY_NAME[name]||await createPrivateVocab(name)}if(!v)throw Error('目标词库不存在');await appendCloudWords(v,previewEntries);currentMode=v.name;refreshHome();setStatus('导入成功：当前共 '+(DB[v.name]||[]).length+' 条','ok');clearPreview()}catch(e){setStatus('导入失败：'+(e.message||e),'err')}}
+function openEditor(){editorMode=currentMode;const v=currentVocab();if(!canEditVocab(v)){toast('公共词库为只读；请建立个人词库');return}editorEntries=(DB[editorMode]||[]).map(e=>({...e}));editorSelected=new Set();document.getElementById('edMode').textContent=editorMode;document.getElementById('edCount').textContent=editorEntries.length;document.getElementById('edSearch').value='';document.getElementById('edDelCount').value='';setEdStatus('');renderEditor();show('editor')}
+async function saveEditor(){collectEdits();const v=VOCAB_BY_NAME[editorMode];if(!canEditVocab(v)){setEdStatus('没有权限修改此词库','err');return}try{await replaceCloudWords(v,editorEntries);document.getElementById('edCount').textContent=editorEntries.length;refreshHome();setEdStatus('已保存：'+editorEntries.length+' 条','ok')}catch(e){setEdStatus('保存失败：'+(e.message||e),'err')}}
+function saveWrongDB(){try{localStorage.setItem(LS_WRONG,JSON.stringify(WRONG_DB))}catch(e){}}
+async function loadCloudWrong(){const {data,error}=await sb.from('wrong_words').select('*').eq('user_id',SESSION_USER.id);if(error)throw error;WRONG_DB={};(data||[]).forEach(x=>{const v=VOCABS.find(q=>q.id===x.vocabulary_id);if(v)(WRONG_DB[v.name]||=[]).push({w:x.w,r:x.r||'',m:x.m||'',count:x.count,ts:new Date(x.updated_at).getTime()})});saveWrongDB()}
+async function cloudWrong(mode,e){const v=VOCAB_BY_NAME[mode];if(!v)return;await sb.from('wrong_words').upsert({user_id:SESSION_USER.id,vocabulary_id:v.id,w:e.w,r:e.r||'',m:e.m||'',count:e.count||1,updated_at:new Date(e.ts||Date.now()).toISOString()},{onConflict:'user_id,vocabulary_id,w,r'})}
+async function cloudDelWrong(mode,w,r){const v=VOCAB_BY_NAME[mode];if(v)await sb.from('wrong_words').delete().eq('user_id',SESSION_USER.id).eq('vocabulary_id',v.id).eq('w',w).eq('r',r)}
+function addWrong(mode,entry){if(!mode||!entry)return;if(!WRONG_DB[mode])WRONG_DB[mode]=[];const list=WRONG_DB[mode],f=list.find(e=>e.w===entry.w&&e.r===entry.r);if(f){f.count=(f.count||1)+1;f.ts=Date.now()}else list.push({w:entry.w,r:entry.r,m:entry.m,count:1,ts:Date.now()});saveWrongDB();cloudWrong(mode,f||list[list.length-1]).catch(console.error)}
+function weakenWrong(mode,entry){const list=WRONG_DB[mode];if(!list)return;const i=list.findIndex(e=>e.w===entry.w&&e.r===entry.r);if(i<0)return;list[i].count=(list[i].count||1)-1;const now=list[i];if(now.count<=0){list.splice(i,1);cloudDelWrong(mode,entry.w,entry.r).catch(console.error)}else cloudWrong(mode,now).catch(console.error);saveWrongDB()}
+function removeWrong(mode,w,r){if(!WRONG_DB[mode])return;WRONG_DB[mode]=WRONG_DB[mode].filter(e=>!(e.w===w&&e.r===r));saveWrongDB();cloudDelWrong(mode,w,r).catch(console.error)}
+function saveStats(){try{localStorage.setItem(LS_STATS,JSON.stringify(STATS))}catch(e){}if(sb&&SESSION_USER)Object.entries(STATS.days||{}).forEach(([day,x])=>sb.from('study_stats').upsert({user_id:SESSION_USER.id,study_date:day,opens:x.opens||0,quizzed:x.quizzed||0,wrong:x.wrong||0,last_report:STATS.lastReport||null},{onConflict:'user_id,study_date'}))}
+async function loadCloudStats(){const {data,error}=await sb.from('study_stats').select('*').eq('user_id',SESSION_USER.id);if(error)throw error;STATS={days:{},lastReport:''};(data||[]).forEach(x=>{STATS.days[x.study_date]={opens:x.opens||0,quizzed:x.quizzed||0,wrong:x.wrong||0};if(x.last_report)STATS.lastReport=x.last_report});saveStats()}
+let authMode='login';function authMail(id){return id.trim().toLowerCase()+'@shunshiriyu.app'}function authMsg(t,c){const e=document.getElementById('authStatus');e.textContent=t||'';e.className='auth-status '+(c||'')}
+function updateAuth(){const reg=authMode==='register',dev=authMode==='dev';document.getElementById('authUserTab').classList.toggle('active',!dev);document.getElementById('authDevTab').classList.toggle('active',dev);document.getElementById('authPassword2').style.display=reg?'':'none';document.getElementById('authSubmit').textContent=reg?'注 册':'登 录';document.getElementById('authRegister').style.display=reg?'none':'';document.getElementById('authHint').textContent=dev?'开发者权限由数据库 role 控制，不在网页源代码保存密钥。':'普通用户可使用公共词库，并创建、编辑自己的个人词库。'}
+async function enterCloud(user){SESSION_USER=user;const {data:pf,error}=await sb.from('profiles').select('id,username,role').eq('id',user.id).single();if(error){authMsg('账号资料读取失败：'+error.message,'err');return}PROFILE=pf;if(authMode==='dev'&&!isAdmin()){await sb.auth.signOut();SESSION_USER=null;PROFILE=null;authMsg('这个账号不是开发者账号','err');return}try{await loadCloudData();await loadCloudWrong();await loadCloudStats()}catch(e){authMsg('云端数据加载失败：'+(e.message||e),'err');return}currentMode=VOCAB_BY_NAME[currentMode]?currentMode:(VOCAB_BY_NAME['日语专业四级']?'日语专业四级':(VOCABS[0]?.name||''));document.getElementById('currentUserName').textContent=pf.username||'—';document.getElementById('currentUserRole').textContent=isAdmin()?'开发者':'用户';refreshHome();show('home');bumpStat('opens');checkReport()}
+async function loginCloud(){const id=document.getElementById('authId').value.trim(),pw=document.getElementById('authPassword').value;if(!id||!pw){authMsg('请输入 ID 与 Password','err');return}authMsg('登录中…');const {data,error}=await sb.auth.signInWithPassword({email:authMail(id),password:pw});if(error){authMsg(error.message,'err');return}await enterCloud(data.user)}
+async function registerCloud(){const id=document.getElementById('authId').value.trim(),pw=document.getElementById('authPassword').value,p2=document.getElementById('authPassword2').value;if(!/^[A-Za-z0-9_-]{3,30}$/.test(id)){authMsg('ID 需为 3-30 位字母、数字、下划线或短横线','err');return}if(pw.length<6){authMsg('Password 至少 6 位','err');return}if(pw!==p2){authMsg('两次 Password 不一致','err');return}authMsg('注册中…');const {data,error}=await sb.auth.signUp({email:authMail(id),password:pw,options:{data:{username:id}}});if(error){authMsg(error.message,'err');return}if(data.session)await enterCloud(data.user);else{authMsg('注册成功。若启用了邮箱确认，请先完成确认后再登录。','ok');authMode='login';updateAuth()}}
+function initAuth(){document.getElementById('authUserTab').onclick=()=>{authMode='login';updateAuth()};document.getElementById('authDevTab').onclick=()=>{authMode='dev';updateAuth()};document.getElementById('authSubmit').onclick=()=>authMode==='register'?registerCloud():loginCloud();document.getElementById('authRegister').onclick=()=>{authMode='register';updateAuth()};document.getElementById('btnLogout').onclick=async()=>{await sb.auth.signOut();location.reload()};updateAuth();if(!SHUNJI_URL||!SHUNJI_ANON){authMsg('请在同目录 config.js 中填写 Supabase 配置。','err');return}sb=window.supabase.createClient(SHUNJI_URL,SHUNJI_ANON);sb.auth.getSession().then(r=>{if(r.data.session)enterCloud(r.data.session.user)})}
+/* 覆盖原主页导入入口，使下拉框只显示云端可见词库 */
+function bindCloudExtras(){document.getElementById('importTargetType').addEventListener('change',()=>{const t=document.getElementById('importTargetType').value;document.getElementById('importPersonalName').style.display=t==='private'?'':'none';document.getElementById('importPermissionNote').textContent=t==='public'?'开发者可以维护公共词库；普通用户不可写入公共词库。':'个人词库只属于当前账号，其他设备登录同一账号后会同步。'});const old=document.getElementById('btnImport');old.addEventListener('click',()=>{const sel=document.getElementById('importMode');sel.innerHTML=VOCABS.map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+' · '+(v.type==='private'?'我的':'公共')+'</option>').join('');sel.value=currentMode;const v=currentVocab(),t=document.getElementById('importTargetType'),n=document.getElementById('importPersonalName');if(isAdmin()){t.style.display='';t.value=v?.type==='public'?'public':'private'}else{t.style.display='none';t.value='private'}n.style.display=t.value==='private'?'':'none';n.value=v?.type==='private'?v.name:'';setStatus('');show('import')})}
 /* ---------------- 启动 ---------------- */
 bind();
 refreshHome();
