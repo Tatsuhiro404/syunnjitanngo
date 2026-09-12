@@ -1823,11 +1823,14 @@ function initAuth(){document.getElementById('authUserTab').onclick=()=>{authMode
 /* 覆盖原主页导入入口，使下拉框只显示云端可见词库 */
 function bindCloudExtras(){document.getElementById('importTargetType').addEventListener('change',()=>{const t=document.getElementById('importTargetType').value;document.getElementById('importPersonalName').style.display=t==='private'?'':'none';document.getElementById('importPermissionNote').textContent=t==='public'?'开发者可以维护公共词库；普通用户不可写入公共词库。':'个人词库只属于当前账号，其他设备登录同一账号后会同步。'});const old=document.getElementById('btnImport');old.addEventListener('click',()=>{const sel=document.getElementById('importMode');sel.innerHTML=VOCABS.map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+' · '+(v.type==='private'?'我的':'公共')+'</option>').join('');sel.value=currentMode;const v=currentVocab(),t=document.getElementById('importTargetType'),n=document.getElementById('importPersonalName');if(isAdmin()){t.style.display='';t.value=v?.type==='public'?'public':'private'}else{t.style.display='none';t.value='private'}n.style.display=t.value==='private'?'':'none';n.value=v?.type==='private'?v.name:'';setStatus('');show('import')})}
 /* ---------------- 启动 ---------------- */
+/* ---------------- 启动 ---------------- */
 bind();
+bindCloudExtras();                 /* 绑定云端相关的按钮 */
 refreshHome();
-bumpStat('opens');                 /* 每次打开网页记一次学习 */
-checkReport();                     /* 打开时若已过 22 点且今日未汇报，立即汇报 */
-setInterval(checkReport, 60000);   /* 页面常开时，每分钟检查一次 */
+bumpStat('opens');
+checkReport();
+setInterval(checkReport, 60000);
+initAuth();                        /* ← 关键：初始化登录页，绑定按钮事件 */
 </script>
 </body>
 </html>
