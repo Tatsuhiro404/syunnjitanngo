@@ -103,7 +103,14 @@ input,select,textarea{font-family:inherit;font-size:15px;}
   padding:2px 9px;border-radius:20px;margin-right:9px;vertical-align:middle;
   letter-spacing:.1em;font-weight:600;
 }
-
+.speak-btn{
+  margin-top:14px;font-size:28px;width:56px;height:56px;border-radius:50%;
+  background:#eef3ff;color:var(--primary);display:flex;align-items:center;
+  justify-content:center;transition:.15s;box-shadow:0 2px 8px rgba(53,99,233,.15);
+}
+.speak-btn:active{transform:scale(.92);background:#dce6ff;}
+.speak-btn.speaking{animation:pulse .8s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
 .actions{display:none;gap:12px;padding-bottom:28px;}
 .actions.show{display:flex;}
 .actions .btn{flex:1;}
@@ -251,9 +258,10 @@ input,select,textarea{font-family:inherit;font-size:15px;}
   <div class="quiz-wrap">
     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
     <div class="word-stage">
-      <div class="word-display" id="wordDisplay"></div>
-      <div class="meaning-display" id="meaningDisplay"></div>
-    </div>
+  <div class="word-display" id="wordDisplay"></div>
+  <button class="speak-btn" id="btnSpeak" title="朗读单词">🔊</button>
+  <div class="meaning-display" id="meaningDisplay"></div>
+</div>
     <div class="actions show" id="actionsP1">
       <button class="btn btn-known" id="btnKnown">认 识</button>
       <button class="btn btn-unknown" id="btnUnknown">不 认 识</button>
@@ -475,7 +483,44 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
 }
+/* ==================== 在线发音模块 ==================== */
+let jaVoice = null;
 
+function loadJaVoice() {
+  return new Promise((resolve) => {
+    const pick = () => speechSynthesis.getVoices().filter(v => v.lang.startsWith('ja'));
+    const first = pick();
+    if (first.length > 0) { jaVoice = first[0]; resolve(jaVoice); return; }
+    const onChange = () => {
+      speechSynthesis.removeEventListener('voiceschanged', onChange);
+      const list = pick();
+      jaVoice = list[0] || null;
+      resolve(jaVoice);
+    };
+    speechSynthesis.addEventListener('voiceschanged', onChange);
+    setTimeout(() => { jaVoice = pick()[0] || null; resolve(jaVoice); }, 2000);
+  });
+}
+
+function speakJapanese(text) {
+  if (!text || !('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'ja-JP';
+  utter.rate = 0.9;
+  utter.pitch = 1;
+  utter.volume = 1;
+  if (jaVoice) utter.voice = jaVoice;
+  speechSynthesis.speak(utter);
+}
+
+function speakCurrentWord() {
+  const cur = state.queue[state.idx];
+  if (!cur) return;
+  speakJapanese(cur.r || cur.w);
+}
+
+loadJaVoice();
 /* ---------------- 振り仮名 自动切分 ---------------- */
 function buildRuby(surface, reading){
   if (!surface) return '';
@@ -1592,6 +1637,24 @@ function openStats(){
    事件绑定
    ========================================================================= */
 function bind(){
+/* --- 发音按钮 --- */
+document.getElementById('btnSpeak').addEventListener('click', (e) => {
+  e.stopPropagation();
+  speakCurrentWord();
+  playClick();
+});
+
+/* --- 点击单词本身也发音 --- */
+document.getElementById('wordDisplay').addEventListener('click', () => {
+  speakCurrentWord();
+  playClick();
+});
+
+/* --- 首次交互解锁音频（浏览器限制） --- */
+document.addEventListener('click', function unlockAudio(){
+  if ('speechSynthesis' in window) loadJaVoice();
+  document.removeEventListener('click', unlockAudio);
+}, { once: true });
   /* --- 主页：模式选择 --- */
   document.getElementById('modeGrid').addEventListener('click', e => {
     const btn = e.target.closest('.mode-chip');
