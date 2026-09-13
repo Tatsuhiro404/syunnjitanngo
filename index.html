@@ -232,11 +232,12 @@ input,select,textarea{font-family:inherit;font-size:15px;}
     <button class="btn btn-primary btn-big" id="btnStart">开 始 测 试</button>
 
     <div class="card mt14">
-      <h3>词库管理</h3>
-      <div class="stat-line"><span>当前模式</span><span id="homeModeName">—</span></div>
-      <div class="stat-line"><span>收录词数</span><span id="homeModeCount">0</span></div>
-      <button class="btn btn-ghost mt10" id="btnImport">快速导入</button>
-    </div><div class="card">
+  <h3>词库管理</h3>
+  <div class="stat-line"><span>当前模式</span><span id="homeModeName">—</span></div>
+  <div class="stat-line"><span>收录词数</span><span id="homeModeCount">0</span></div>
+  <button class="btn btn-ghost mt10" id="btnImport">快速导入</button>
+  <button class="btn btn-ghost mt10" id="btnDeleteVocab" style="color:var(--red);display:none">删除当前词库</button>
+</div><div class="card">
   <h3>学习工具</h3>
   <button class="btn btn-ghost mt10" id="btnWrongBook">长期错词本</button>
   <button class="btn btn-ghost mt10" id="btnEditor">编辑当前词库</button>
@@ -443,7 +444,7 @@ input,select,textarea{font-family:inherit;font-size:15px;}
 
 <script>
 /* =========================================================================
-   瞬時単語TEST — 完整主逻辑（第 1 段结束，紧接第 2 段）
+   瞬時単語テスト — 完整主逻辑（第 1 段结束，紧接第 2 段）
    ========================================================================= */
 
 /* ---------------- 常量 ---------------- */
@@ -1056,6 +1057,7 @@ function renderModes(){
 function updateHomeStats(){
   document.getElementById('homeModeName').textContent = currentMode;
   document.getElementById('homeModeCount').textContent = (DB[currentMode] || []).length;
+  if (typeof window.updateDeleteButton === 'function') window.updateDeleteButton();
 }
 function refreshHome(){
   renderModes();
@@ -1937,7 +1939,98 @@ async function loginCloud(){const id=document.getElementById('authId').value.tri
 async function registerCloud(){const id=document.getElementById('authId').value.trim(),pw=document.getElementById('authPassword').value,p2=document.getElementById('authPassword2').value;if(!/^[A-Za-z0-9_-]{3,30}$/.test(id)){authMsg('ID 需为 3-30 位字母、数字、下划线或短横线','err');return}if(pw.length<6){authMsg('Password 至少 6 位','err');return}if(pw!==p2){authMsg('两次 Password 不一致','err');return}authMsg('注册中…');const {data,error}=await sb.auth.signUp({email:authMail(id),password:pw,options:{data:{username:id}}});if(error){authMsg(error.message,'err');return}if(data.session)await enterCloud(data.user);else{authMsg('注册成功。若启用了邮箱确认，请先完成确认后再登录。','ok');authMode='login';updateAuth()}}
 function initAuth(){document.getElementById('authUserTab').onclick=()=>{authMode='login';updateAuth()};document.getElementById('authDevTab').onclick=()=>{authMode='dev';updateAuth()};document.getElementById('authSubmit').onclick=()=>authMode==='register'?registerCloud():loginCloud();document.getElementById('authRegister').onclick=()=>{authMode='register';updateAuth()};document.getElementById('btnLogout').onclick=async()=>{await sb.auth.signOut();location.reload()};updateAuth();if(!SHUNJI_URL||!SHUNJI_ANON){authMsg('请在同目录 config.js 中填写 Supabase 配置。','err');return}sb=window.supabase.createClient(SHUNJI_URL,SHUNJI_ANON);sb.auth.getSession().then(r=>{if(r.data.session)enterCloud(r.data.session.user)})}
 /* 覆盖原主页导入入口，使下拉框只显示云端可见词库 */
-function bindCloudExtras(){document.getElementById('importTargetType').addEventListener('change',()=>{const t=document.getElementById('importTargetType').value;document.getElementById('importPersonalName').style.display=t==='private'?'':'none';document.getElementById('importPermissionNote').textContent=t==='public'?'开发者可以维护公共词库；普通用户不可写入公共词库。':'个人词库只属于当前账号，其他设备登录同一账号后会同步。'});const old=document.getElementById('btnImport');old.addEventListener('click',()=>{const sel=document.getElementById('importMode');sel.innerHTML=VOCABS.map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+' · '+(v.type==='private'?'我的':'公共')+'</option>').join('');sel.value=currentMode;const v=currentVocab(),t=document.getElementById('importTargetType'),n=document.getElementById('importPersonalName');if(isAdmin()){t.style.display='';t.value=v?.type==='public'?'public':'private'}else{t.style.display='none';t.value='private'}n.style.display=t.value==='private'?'':'none';n.value=v?.type==='private'?v.name:'';setStatus('');show('import')})}
+function bindCloudExtras(){
+  /* ========== 原有逻辑（保持不动） ========== */
+  document.getElementById('importTargetType').addEventListener('change',()=>{
+    const t=document.getElementById('importTargetType').value;
+    document.getElementById('importPersonalName').style.display=t==='private'?'':'none';
+    document.getElementById('importPermissionNote').textContent=t==='public'
+      ?'开发者可以维护公共词库；普通用户不可写入公共词库。'
+      :'个人词库只属于当前账号，其他设备登录同一账号后会同步。';
+  });
+
+  const old=document.getElementById('btnImport');
+  old.addEventListener('click',()=>{
+    const sel=document.getElementById('importMode');
+    sel.innerHTML=VOCABS.map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+' · '+(v.type==='private'?'我的':'公共')+'</option>').join('');
+    sel.value=currentMode;
+    const v=currentVocab(),t=document.getElementById('importTargetType'),n=document.getElementById('importPersonalName');
+    if(isAdmin()){t.style.display='';t.value=v?.type==='public'?'public':'private'}
+    else{t.style.display='none';t.value='private'}
+    n.style.display=t.value==='private'?'':'none';
+    n.value=v?.type==='private'?v.name:'';
+    setStatus('');
+    show('import');
+  });
+
+  /* ========== 新增：删除词库功能 ========== */
+  window.updateDeleteButton = function(){
+    const btn = document.getElementById('btnDeleteVocab');
+    if (!btn) return;
+    const v = currentVocab();
+    if (!v) { btn.style.display = 'none'; return; }
+
+    /* 判断权限：开发者可删任何词库；普通用户只能删自己的个人词库 */
+    const canDelete =
+      isAdmin() ||
+      (v.type === 'private' && v.owner_id === SESSION_USER?.id);
+
+    btn.style.display = canDelete ? '' : 'none';
+    btn.textContent = v.type === 'public' ? '删除当前公共词库' : '删除当前个人词库';
+  };
+
+  async function deleteCurrentVocab(){
+    const v = currentVocab();
+    if (!v) { toast('当前没有选中的词库'); return; }
+
+    /* 权限二次校验 */
+    const canDelete =
+      isAdmin() ||
+      (v.type === 'private' && v.owner_id === SESSION_USER?.id);
+    if (!canDelete) { toast('没有权限删除此词库'); return; }
+
+    const cnt = (DB[v.name] || []).length;
+    const isPublic = v.type === 'public';
+
+    /* 公共词库需要输入词库名确认 */
+    if (isPublic){
+      const typed = prompt(
+        `⚠️ 你将删除公共词库「${v.name}」\n` +
+        `该词库包含 ${cnt} 个单词，删除后所有用户都看不到，不可恢复！\n\n` +
+        `若确认删除，请输入词库名：${v.name}`
+      );
+      if (typed !== v.name) { toast('词库名不匹配，已取消'); return; }
+    } else {
+      if (!confirm(
+        `确定要删除个人词库「${v.name}」吗？\n` +
+        `该词库包含 ${cnt} 个单词，删除后不可恢复。`
+      )) return;
+    }
+
+    try{
+      const { error } = await sb.from('vocabularies').delete().eq('id', v.id);
+      if (error) throw error;
+
+      /* 清理本地状态 */
+      VOCABS = VOCABS.filter(x => x.id !== v.id);
+      delete VOCAB_BY_NAME[v.name];
+      delete DB[v.name];
+      saveDB();
+
+      currentMode = VOCABS.length ? VOCABS[0].name : '';
+      refreshHome();
+      toast(`已删除「${v.name}」`);
+    } catch(e){
+      console.error(e);
+      toast('删除失败：' + (e.message || e));
+    }
+  }
+
+  document.getElementById('btnDeleteVocab').addEventListener('click', deleteCurrentVocab);
+
+  /* 首次进入刷新按钮状态 */
+  updateDeleteButton();
+}
 /* ---------------- 启动 ---------------- */
 /* ---------------- 启动 ---------------- */
 bind();
