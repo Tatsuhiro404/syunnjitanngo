@@ -209,15 +209,14 @@ input,select,textarea{font-family:inherit;font-size:15px;}
 <body>
 
 <!-- ============ 主页面 ============ -->
-<section id="screen-auth" class="screen active"><div class="auth-wrap"><div class="home-head" style="padding-top:10px"><h1>瞬時単語テスト</h1><p>INSTANT VOCABULARY TEST</p></div><div class="auth-card"><div class="auth-tabs"><button class="auth-tab active" id="authUserTab">用户登录</button><button class="auth-tab" id="authDevTab">开发者登录</button></div><input class="input" id="authId" autocomplete="username" placeholder="ID（唯一用户名）"><input class="input mt10" id="authPassword" type="password" autocomplete="current-password" placeholder="Password"><input class="input mt10" id="authPassword2" type="password" autocomplete="new-password" placeholder="再次输入 Password" style="display:none"><button class="btn btn-primary mt14" id="authSubmit">登 录</button><button class="btn btn-ghost mt10" id="authRegister">注册新账号</button><div class="auth-status" id="authStatus"></div><div class="hint mt10" id="authHint">普通用户可使用公共词库，并创建、编辑自己的个人词库。</div></div></div></section><section id="screen-home" class="screen">
+<section id="screen-auth" class="screen active"><div class="auth-wrap"><div class="home-head" style="padding-top:10px"><h1>瞬時単語テスト</h1><p>INSTANT VOCABULARY TEST</p></div><div class="auth-card"><div class="auth-tabs"><button class="auth-tab active" id="authUserTab">用户登录</button><button class="auth-tab" id="authDevTab">开发者登录</button></div><input class="input" id="authId" autocomplete="username" placeholder="ID（唯一用户名）"><input class="input mt10" id="authPassword" type="password" autocomplete="current-password" placeholder="Password"><input class="input mt10" id="authPassword2" type="password" autocomplete="new-password" placeholder="再次输入 Password" style="display:none"><button class="btn btn-primary mt14" id="authSubmit">登 录</button><button class="btn btn-ghost mt10" id="authRegister">注册新账号</button><button class="btn btn-ghost mt10" id="btnInstallAppAuth">＋ 安装到手机 / 桌面</button><div class="auth-status" id="authStatus"></div><div class="hint mt10" id="authHint">普通用户可使用公共词库，并创建、编辑自己的个人词库。</div></div></div></section><section id="screen-home" class="screen">
   <div class="home-head">
     <h1>瞬時単語テスト</h1>
     <p>INSTANT VOCABULARY TEST</p>
   </div>
   <div class="pad">
     <div class="userbar"><span>已登录：<b id="currentUserName">—</b> <span class="role-badge" id="currentUserRole">用户</span></span><button class="icon-btn" id="btnLogout">退出登录</button></div>
-    <button class="btn btn-ghost" id="btnInstallApp" style="display:none;margin-bottom:14px">＋ 安装到手机 / 桌面</button>
-    <div class="card">
+        <div class="card">
       <h3>选择模式</h3>
       <div class="mode-grid" id="modeGrid"></div>
     </div>
@@ -2121,34 +2120,56 @@ initAuth();                        /* ← 关键：初始化登录页，绑定�
 <script>
 /* ==================== PWA 安装与 Service Worker ==================== */
 (function initPWA(){
-  const installBtn = document.getElementById('btnInstallApp');
+  const installBtn = document.getElementById('btnInstallAppAuth');
   if (!installBtn) return;
 
   let deferredPrompt = null;
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
 
-  if (isStandalone) return;
-
-  if (isIOS) {
-    installBtn.style.display = 'block';
-    installBtn.addEventListener('click', () => {
-      toast('请使用浏览器菜单中的“添加到主屏幕”安装应用');
-    });
+  // 已经安装成 App 时，不再显示安装按钮。
+  if (isStandalone) {
+    installBtn.style.display = 'none';
+    return;
   }
 
+  // Android / Chrome / Edge 等支持原生 PWA 安装提示的浏览器。
   window.addEventListener('beforeinstallprompt', (event) => {
     event.preventDefault();
     deferredPrompt = event;
-    installBtn.style.display = 'block';
   });
 
   installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    installBtn.style.display = 'none';
+    // 有原生安装提示时，直接弹出系统安装窗口。
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      try {
+        await deferredPrompt.userChoice;
+      } catch (err) {
+        console.warn('[PWA] 安装提示处理失败:', err);
+      }
+      deferredPrompt = null;
+      return;
+    }
+
+    // iPhone / iPad 没有 beforeinstallprompt，需要通过浏览器菜单添加到主屏幕。
+    if (isIOS) {
+      alert(
+        '安装方法：\n\n' +
+        '1. 点击浏览器的“分享”按钮\n' +
+        '2. 选择“添加到主屏幕”\n' +
+        '3. 点击“添加”即可安装'
+      );
+      return;
+    }
+
+    // 浏览器暂时没有提供原生安装事件时，给出通用提示。
+    alert(
+      '当前浏览器暂时无法直接弹出安装窗口。\n\n' +
+      '请打开浏览器菜单，寻找“安装应用”或“添加到主屏幕”。'
+    );
   });
 
   window.addEventListener('appinstalled', () => {
@@ -2160,11 +2181,14 @@ initAuth();                        /* ← 关键：初始化登录页，绑定�
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js', {scope: '/'}).catch(err => {
+    navigator.serviceWorker.register('/sw.js', {scope: '/'}).then(() => {
+      console.log('[PWA] Service Worker 注册成功');
+    }).catch(err => {
       console.warn('[PWA] Service Worker 注册失败:', err);
     });
   });
 }
+</script>
 
 <script type="module">
 import { generateSpeech } from 'https://cdn.jsdelivr.net/npm/@bestcodes/edge-tts@3.0.1/dist/index.min.js';
