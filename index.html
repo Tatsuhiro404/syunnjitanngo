@@ -262,7 +262,7 @@ input,select,textarea{font-family:inherit;font-size:15px;}
 <body>
 
 <!-- ============ 主页面 ============ -->
-<section id="screen-auth" class="screen active"><div class="auth-wrap"><div class="home-head" style="padding-top:10px"><h1>瞬時単語テスト</h1><p>INSTANT VOCABULARY TEST</p></div><div class="auth-card"><div class="auth-tabs"><button class="auth-tab active" id="authUserTab">用户登录</button><button class="auth-tab" id="authDevTab">开发者登录</button></div><input class="input" id="authId" autocomplete="username" placeholder="ID（唯一用户名）"><input class="input mt10" id="authPassword" type="password" autocomplete="current-password" placeholder="Password"><input class="input mt10" id="authPassword2" type="password" autocomplete="new-password" placeholder="再次输入 Password" style="display:none"><button class="btn btn-primary mt14" id="authSubmit">登 录</button><button class="btn btn-ghost mt10" id="authRegister">注册新账号</button><button class="btn btn-ghost mt10" id="btnInstallAppAuth">＋ 安装到手机 / 桌面</button><div class="auth-status" id="authStatus"></div><div class="hint mt10" id="authHint">普通用户可使用公共词库，并创建、编辑自己的个人词库。</div></div></div></section><section id="screen-home" class="screen">
+<section id="screen-auth" class="screen active"><div class="auth-wrap"><div class="home-head" style="padding-top:10px"><h1>瞬時単語テスト</h1><p>INSTANT VOCABULARY TEST</p></div><div class="auth-card"><div class="auth-tabs"><button class="auth-tab active" id="authUserTab">用户登录</button><button class="auth-tab" id="authDevTab">开发者登录</button></div><input class="input" id="authId" autocomplete="username" placeholder="ID（唯一用户名）"><input class="input mt10" id="authPassword" type="password" autocomplete="current-password" placeholder="Password"><input class="input mt10" id="authPassword2" type="password" autocomplete="new-password" placeholder="再次输入 Password" style="display:none"><button class="btn btn-primary mt14" id="authSubmit">登 录</button><button class="btn btn-ghost mt10" id="authRegister">注册新账号</button><button class="btn btn-ghost mt10" id="btnInstallAppAuth">＋ 安装PC端／移动端</button><div class="auth-status" id="authStatus"></div><div class="hint mt10" id="authHint">普通用户可使用公共词库，并创建、编辑自己的个人词库。</div></div></div></section><section id="screen-home" class="screen">
   <div class="home-head">
     <h1>瞬時単語テスト</h1>
     <p>INSTANT VOCABULARY TEST</p>
@@ -2171,67 +2171,52 @@ initAuth();                        /* ← 关键：初始化登录页，绑定�
 </script>
 
 <script>
-/* ==================== PWA 安装与 Service Worker ==================== */
-(function initPWA(){
+/* ==================== APK 安装（替代 PWA 安装按钮） ==================== */
+(function initAPKInstall(){
   const installBtn = document.getElementById('btnInstallAppAuth');
   if (!installBtn) return;
 
-  let deferredPrompt = null;
-  const isStandalone =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
-  const isIOS = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  /* 与网页部署在同一目录，避免写死域名。 */
+  const APK_PATH = './shunji-app-release.apk';
 
-  // 已经安装成 App 时，不再显示安装按钮。
-  if (isStandalone) {
-    installBtn.style.display = 'none';
-    return;
-  }
+  installBtn.addEventListener('click', () => {
+    const ua = navigator.userAgent || '';
+    const isAndroid = /Android/i.test(ua);
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
 
-  // Android / Chrome / Edge 等支持原生 PWA 安装提示的浏览器。
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-  });
-
-  installBtn.addEventListener('click', async () => {
-    // 有原生安装提示时，直接弹出系统安装窗口。
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      try {
-        await deferredPrompt.userChoice;
-      } catch (err) {
-        console.warn('[PWA] 安装提示处理失败:', err);
-      }
-      deferredPrompt = null;
-      return;
-    }
-
-    // iPhone / iPad 没有 beforeinstallprompt，需要通过浏览器菜单添加到主屏幕。
+    /* iPhone / iPad 无法安装 Android APK。 */
     if (isIOS) {
       alert(
-        '安装方法：\n\n' +
-        '1. 点击浏览器的“分享”按钮\n' +
-        '2. 选择“添加到主屏幕”\n' +
-        '3. 点击“添加”即可安装'
+        '当前设备为 iPhone / iPad，无法直接安装 Android APK。\n\n' +
+        '请使用 Android 手机、平板，或在电脑上的 Android 模拟器中安装此 APK。'
       );
       return;
     }
 
-    // 浏览器暂时没有提供原生安装事件时，给出通用提示。
-    alert(
-      '当前浏览器暂时无法直接弹出安装窗口。\n\n' +
-      '请打开浏览器菜单，寻找“安装应用”或“添加到主屏幕”。'
-    );
-  });
+    /*
+     * 不再调用 beforeinstallprompt / PWA 安装流程。
+     * 通过下载 APK 文件，让 Android 系统接管后续安装。
+     */
+    const link = document.createElement('a');
+    link.href = APK_PATH;
+    link.download = '瞬時単語テスト.apk';
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 
-  window.addEventListener('appinstalled', () => {
-    deferredPrompt = null;
-    installBtn.style.display = 'none';
-    if (typeof toast === 'function') toast('应用已安装');
+    if (typeof toast === 'function') {
+      toast(isAndroid
+        ? 'APK 正在下载，请在下载完成后安装'
+        : 'APK 正在下载，可在 Android 设备或模拟器中安装');
+    }
   });
 })();
 
+/*
+ * 保留 Service Worker：它用于网页缓存/离线能力，
+ * 但不再参与“安装应用”按钮的行为。
+ */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', {scope: '/'}).then(() => {
