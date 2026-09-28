@@ -1,26 +1,8 @@
-# 本次修改
+# 修改说明
 
-## 安装入口
-
-- `index.html` 中的按钮文字改为 `安装PC端／移动端`。
-- 移除 `beforeinstallprompt` / PWA 原生安装流程。
-- 桌面浏览器点击后下载站点根目录的 `base.apk`。
-
-## 显示规则
-
-- 桌面浏览器：显示安装入口。
-- Android / iOS 移动端：隐藏安装入口。
-- PWA standalone：隐藏安装入口。
-- Android WebView / 当前 APK：隐藏安装入口。
-
-## 缓存
-
-- `sw.js` 缓存版本从 `v3` 升到 `v4`，让修改后的页面能更快替换旧缓存。
-
-## APK
-
-- `base.apk` 是本次收到的原始 APK，未修改其二进制内容；网页通过识别 WebView 环境实现 APK 内隐藏安装入口。
-
-## 部署
-
-`index.html` 和 `base.apk` 必须部署在同一站点根目录，使 `/base.apk` 能被访问。
+- 登录页按钮名称改为「安装PC端／移动端」。
+- 网页版（电脑浏览器、手机浏览器）均保留该按钮。
+- 网页版点击按钮直接下载 `base.apk`，不再触发 PWA 安装。
+- 仅当当前页面检测到 APK 内置的 `window.ToAppExport` JS Bridge 时隐藏按钮。
+- 未使用 Android/iOS/桌面 UA 判断，因此普通手机浏览器不会被误隐藏。
+- Service Worker 缓存版本升级为 v6。

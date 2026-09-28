@@ -2171,33 +2171,32 @@ initAuth();                        /* ← 关键：初始化登录页，绑定�
 </script>
 
 <script>
-/* ==================== Android APK 安装入口 ==================== */
+/* ==================== PC / APK 安装入口与 Service Worker ==================== */
 (function initApkInstaller(){
   const installBtn = document.getElementById('btnInstallAppAuth');
   if (!installBtn) return;
 
-  const ua = window.navigator.userAgent || '';
-  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(ua);
-  const isStandalone =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
-  const isWebView =
-    /;\s*wv\)/i.test(ua) ||
-    /Version\/4\.0.*Chrome\//i.test(ua) ||
-    !!window.Android ||
-    !!window.toApp;
+  /*
+   * 这里不按手机/电脑判断。网页版本（电脑、手机浏览器）都保留入口。
+   * 只有官方 APK 的 WebView 注入了 ToAppExport JS Bridge 时才隐藏。
+   * 该桥接对象来自当前 base.apk，可避免普通 Android/iOS 浏览器被误判。
+   */
+  const isOfficialApk = !!(window.ToAppExport && typeof window.ToAppExport === 'object');
 
-  // 安装入口只保留在桌面浏览器；移动浏览器、PWA 及 APK WebView 内全部隐藏。
-  if (isMobile || isStandalone || isWebView) {
-    installBtn.style.display = 'none';
+  if (isOfficialApk) {
+    installBtn.hidden = true;
+    installBtn.setAttribute('aria-hidden', 'true');
     return;
   }
 
-  const APK_URL = '/base.apk';
+  installBtn.hidden = false;
+  installBtn.removeAttribute('aria-hidden');
 
   installBtn.addEventListener('click', () => {
+    /* 网页端点击后下载 Android APK，不再触发 PWA 安装。 */
+    const apkUrl = new URL('/base.apk', window.location.origin).href;
     const link = document.createElement('a');
-    link.href = APK_URL;
+    link.href = apkUrl;
     link.download = 'shunji-tango.apk';
     link.rel = 'noopener';
     document.body.appendChild(link);

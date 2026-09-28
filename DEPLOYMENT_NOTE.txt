@@ -1,0 +1,6 @@
+部署说明：
+1. 将本目录全部文件部署到网站根目录。
+2. 确保 https://你的域名/base.apk 可以直接访问。
+3. 网页版登录页会显示「安装PC端／移动端」，点击下载 base.apk。
+4. 使用该 APK 打开网站时，APK 注入的 ToAppExport JS Bridge 会使该按钮隐藏。
+5. 如果旧 Service Worker 仍缓存旧页面，请刷新一次；sw.js 已升级到 v6。
