@@ -2177,23 +2177,63 @@ initAuth();                        /* ← 关键：初始化登录页，绑定�
   if (!installBtn) return;
 
   /*
-   * 这里不按手机/电脑判断。网页版本（电脑、手机浏览器）都保留入口。
-   * 只有官方 APK 的 WebView 注入了 ToAppExport JS Bridge 时才隐藏。
-   * 该桥接对象来自当前 base.apk，可避免普通 Android/iOS 浏览器被误判。
+   * 规则只有一条：普通网页版（电脑/手机浏览器/PWA）保留入口；
+   * 官方 APK 内的 ToApp WebView 才隐藏入口。
+   *
+   * ToAppExport 可能不是在页面脚本执行的同一时刻注入 WebView，
+   * 因此不能只在这里同步判断一次，否则 APK 会因为“检测太早”而看到按钮。
+   * 这里采用短轮询：一旦检测到官方 Bridge 立即隐藏；普通浏览器永远不会命中。
    */
-  const isOfficialApk = !!(window.ToAppExport && typeof window.ToAppExport === 'object');
+  const isOfficialApk = () => {
+    try {
+      /* ToApp 同时会安装这个页面级标记；它比 UA 更可靠，因为当前 APK
+         故意使用了桌面 Chrome UA。Bridge/标记任一存在都说明当前是 APK。 */
+      if (window.__toappExportTrackerInstalled === true) return true;
+      const bridge = window.ToAppExport;
+      return !!bridge && (
+        typeof bridge.saveBlob === 'function' ||
+        typeof bridge.recordExportName === 'function'
+      );
+    } catch (_) {
+      return false;
+    }
+  };
 
-  if (isOfficialApk) {
+  const hideForOfficialApk = () => {
     installBtn.hidden = true;
+    installBtn.style.display = 'none';
     installBtn.setAttribute('aria-hidden', 'true');
-    return;
-  }
+  };
 
+  /* 网页版始终默认显示。 */
   installBtn.hidden = false;
+  installBtn.style.display = '';
   installBtn.removeAttribute('aria-hidden');
+
+  /* APK Bridge 有可能延迟注入，持续检测几秒。 */
+  let checks = 0;
+  const timer = setInterval(() => {
+    checks += 1;
+    if (isOfficialApk()) {
+      clearInterval(timer);
+      hideForOfficialApk();
+      return;
+    }
+    if (checks >= 100) clearInterval(timer);
+  }, 100);
+
+  /* 页面打开后如果 Bridge 已存在，立即隐藏。 */
+  if (isOfficialApk()) {
+    clearInterval(timer);
+    hideForOfficialApk();
+  }
 
   installBtn.addEventListener('click', () => {
     /* 网页端点击后下载 Android APK，不再触发 PWA 安装。 */
+    if (isOfficialApk()) {
+      hideForOfficialApk();
+      return;
+    }
     const apkUrl = new URL('/base.apk', window.location.origin).href;
     const link = document.createElement('a');
     link.href = apkUrl;
