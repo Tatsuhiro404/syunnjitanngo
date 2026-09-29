@@ -508,8 +508,8 @@ input,select,textarea{font-family:inherit;font-size:15px;}
    ========================================================================= */
 
 /* ---------------- 常量 ---------------- */
-const MODES = ['N1','N2','N3－N5','考研日语203','日语专业四级',
-               '日语专业八级','大学日语四级','大学日语六级'];
+const MODES = ['N1','N2','N3－N5','考研日语203'];
+const REMOVED_MODES = new Set(['日语专业四级','日语专业八级','大学日语四级','大学日语六级']);
 
 /* 开发者密钥：所有模式共用，只有输入正确才允许导入 */
 const DEV_KEY = '';
@@ -717,338 +717,6 @@ function textToEntries(text){
   return out;
 }
 
-/* ---------------- 种子词库（日语专业四级） ---------------- */
-const SEED_YOUJI4_RAW = `
-溢れる|あふれる|溢出，充满
-味わう|あじわう|品尝；体味
-預ける|あずける|寄存，托付
-与える|あたえる|给予
-辺り|あたり|附近，周围
-扱う|あつかう|处理，对待
-当てる|あてる|碰，撞；猜
-謝る|あやまる|道歉
-争う|あらそう|争夺，争论
-表す|あらわす|表示，表现
-現れる|あらわれる|出现，显露
-安心|あんしん|安心，放心
-案内|あんない|向导，引导
-意見|いけん|意见
-育つ|そだつ|成长，发育
-致す|いたす|做（自谦语）
-位置|いち|位置
-一層|いっそう|更加
-一致|いっち|一致
-一般|いっぱん|一般，普通
-移動|いどう|移动
-従う|したがう|遵从，跟随
-違反|いはん|违反
-印刷|いんさつ|印刷
-印象|いんしょう|印象
-受ける|うける|接受，受到
-承る|うけたまわる|恭听，接受（自谦）
-動かす|うごかす|移动，打动
-失う|うしなう|失去
-疑う|うたがう|怀疑
-写す|うつす|抄写，拍照
-訴える|うったえる|控诉，诉说
-訪れる|おとずれる|访问，到来
-奪う|うばう|夺取
-埋める|うめる|填埋
-敬う|うやまう|尊敬
-影響|えいきょう|影响
-永遠|えいえん|永远
-衛星|えいせい|卫星
-栄養|えいよう|营养
-描く|えがく|描绘
-得る|える|得到
-延期|えんき|延期
-演技|えんぎ|演技
-援助|えんじょ|援助
-応じる|おうじる|响应，按照
-応募|おうぼ|应募，报名
-補う|おぎなう|补充
-抑える|おさえる|压制，抑制
-収める|おさめる|收纳，取得
-惜しい|おしい|可惜的
-遅らす|おくらす|推迟
-起こす|おこす|叫醒，引起
-行う|おこなう|进行，举行
-怒る|おこる|生气，发怒
-収まる|おさまる|收纳，平息
-お辞儀|おじぎ|鞠躬
-惜しむ|おしむ|惋惜，珍惜
-恐らく|おそらく|恐怕，大概
-恐れる|おそれる|恐惧，害怕
-落ち着く|おちつく|沉着，安定
-落とす|おとす|使落下，降低
-劣る|おとる|逊色，不如
-驚く|おどろく|吃惊
-覚える|おぼえる|记住，感觉
-思い出す|おもいだす|想起
-趣|おもむき|情趣，风趣
-及ぼす|およぼす|波及，影响到
-改善|かいぜん|改善
-概念|がいねん|概念
-回復|かいふく|恢复
-輝く|かがやく|闪耀
-限る|かぎる|限于，限定
-拡張|かくちょう|扩张
-格別|かくべつ|特别
-重なる|かさなる|重叠
-稼ぐ|かせぐ|赚钱，争取
-数える|かぞえる|数，计算
-傾く|かたむく|倾斜
-語る|かたる|讲述
-担う|になう|担负
-悲しむ|かなしむ|悲伤
-構う|かまう|介意，理睬
-通う|かよう|通行，往返
-枯れる|かれる|枯萎
-感覚|かんかく|感觉
-観察|かんさつ|观察
-完成|かんせい|完成
-感謝|かんしゃ|感谢
-感心|かんしん|佩服，赞叹
-関心|かんしん|关心，兴趣
-管理|かんり|管理
-気圧|きあつ|气压
-記憶|きおく|记忆
-気軽|きがる|轻松，爽快
-効く|きく|有效
-期間|きかん|期间
-機関|きかん|机关，机构
-危害|きがい|危害
-企業|きぎょう|企业
-記事|きじ|报道，消息
-気象|きしょう|气象
-傷つく|きずつく|受伤
-基準|きじゅん|基准
-北極|ほっきょく|北极
-気付く|きづく|注意到
-規定|きてい|规定
-機能|きのう|机能，功能
-規模|きぼ|规模
-厳しい|きびしい|严格的
-希望|きぼう|希望
-客観|きゃっかん|客观
-救援|きゅうえん|救援
-休憩|きゅうけい|休息
-究極|きゅうきょく|终极
-急激|きゅうげき|急剧
-休日|きゅうじつ|休息日
-給料|きゅうりょう|工资
-器用|きよう|灵巧
-嫌う|きらう|讨厌
-距離|きょり|距离
-緊張|きんちょう|紧张
-空白|くうはく|空白
-崩す|くずす|弄坏，打乱
-苦心|くしん|苦心
-偶然|ぐうぜん|偶然
-具体的|ぐたいてき|具体的
-区分|くぶん|区分
-工夫|くふう|下功夫，设法
-悔しい|くやしい|懊悔的
-加える|くわえる|加上，增加
-加わる|くわわる|加入
-訓練|くんれん|训练
-経過|けいか|经过
-敬語|けいご|敬语
-掲示|けいじ|揭示，告示
-継続|けいぞく|继续
-傾斜|けいしゃ|倾斜
-経済|けいざい|经济
-計算|けいさん|计算
-芸術|げいじゅつ|艺术
-契約|けいやく|契约，合同
-経由|けいゆ|经由
-削る|けずる|削减
-結論|けつろん|结论
-蹴る|ける|踢
-権利|けんり|权利
-原因|げんいん|原因
-減少|げんしょう|减少
-現象|げんしょう|现象
-現代|げんだい|现代
-限度|げんど|限度
-効果|こうか|效果
-高価|こうか|高价
-豪華|ごうか|豪华
-合格|ごうかく|合格
-交換|こうかん|交换
-講義|こうぎ|讲义，授课
-抵抗|ていこう|抵抗
-攻撃|こうげき|攻击
-貢献|こうけん|贡献
-合計|ごうけい|合计
-交際|こうさい|交际
-構想|こうそう|构想
-交替|こうたい|交替
-肯定|こうてい|肯定
-高度|こうど|高度
-考慮|こうりょ|考虑
-誤解|ごかい|误解
-呼吸|こきゅう|呼吸
-故郷|こきょう|故乡
-国籍|こくせき|国籍
-克服|こくふく|克服
-快い|こころよい|爽快的
-誤差|ごさ|误差
-個人|こじん|个人
-故障|こしょう|故障
-細かい|こまかい|细小的
-混雑|こんざつ|混杂，拥挤
-混乱|こんらん|混乱
-採用|さいよう|采用
-逆らう|さからう|违背
-支える|ささえる|支撑
-刺す|さす|刺，扎
-誘う|さそう|邀请，引诱
-定める|さだめる|规定，确定
-覚める|さめる|醒
-騒ぐ|さわぐ|吵闹
-酸素|さんそ|氧气
-賛成|さんせい|赞成
-残念|ざんねん|遗憾
-事業|じぎょう|事业
-刺激|しげき|刺激
-資源|しげん|资源
-支持|しじ|支持
-事情|じじょう|情况
-従来|じゅうらい|从来，以往
-手術|しゅじゅつ|手术
-手段|しゅだん|手段
-主張|しゅちょう|主张
-出発|しゅっぱつ|出发
-寿命|じゅみょう|寿命
-主要|しゅよう|主要
-順調|じゅんちょう|顺利
-生じる|しょうじる|产生
-承認|しょうにん|承认
-証明|しょうめい|证明
-初級|しょきゅう|初级
-食欲|しょくよく|食欲
-女房|にょうぼう|妻子（口语）
-慎重|しんちょう|慎重
-深刻|しんこく|严重
-信頼|しんらい|信赖
-水道|すいどう|自来水
-推薦|すいせん|推荐
-図々しい|ずうずうしい|厚脸皮的
-救う|すくう|拯救
-優れる|すぐれる|优秀，出色
-進める|すすめる|推进
-勧める|すすめる|劝告，推荐
-済ませる|すませる|办完，弄完
-擦る|する|摩擦
-接する|せっする|接触，接待
-設定|せってい|设定
-説明|せつめい|说明
-世間|せけん|世间，社会
-攻める|せめる|进攻
-責任|せきにん|责任
-世代|せだい|世代
-説得|せっとく|说服
-設備|せつび|设备
-全部|ぜんぶ|全部
-相変わらず|あいかわらず|照旧，一如既往
-相当|そうとう|相当
-促す|うながす|促使
-組織|そしき|组织
-尊敬|そんけい|尊敬
-存在|そんざい|存在
-対応|たいおう|对应，应对
-対象|たいしょう|对象
-態度|たいど|态度
-逮捕|たいほ|逮捕
-高める|たかめる|提高
-蓄える|たくわえる|储蓄，蓄积
-確かめる|たしかめる|确认
-訪ねる|たずねる|拜访
-尋ねる|たずねる|询问
-例える|たとえる|比喻
-頼る|たよる|依靠
-段階|だんかい|阶段
-地域|ちいき|地区
-知恵|ちえ|智慧
-近付く|ちかづく|靠近
-蓄積|ちくせき|蓄积
-遅刻|ちこく|迟到
-縮む|ちぢむ|收缩
-秩序|ちつじょ|秩序
-的中|てきちゅう|命中
-適当|てきとう|适当；随便
-徹する|てっする|贯彻
-手配|てはい|安排，部署
-照れる|てれる|害羞
-伝統|でんとう|传统
-当然|とうぜん|当然
-到着|とうちゃく|到达
-投資|とうし|投资
-同調|どうちょう|赞同，同调
-登録|とうろく|登记，注册
-都市|とし|都市
-年齢|ねんれい|年龄
-把握|はあく|把握
-配布|はいふ|散发
-破壊|はかい|破坏
-派遣|はけん|派遣
-果たす|はたす|完成，实现
-発揮|はっき|发挥
-発達|はったつ|发达
-反映|はんえい|反映
-判断|はんだん|判断
-美化|びか|美化
-比較|ひかく|比较
-引き受ける|ひきうける|接受，承担
-批判|ひはん|批判
-評価|ひょうか|评价
-表現|ひょうげん|表现
-品質|ひんしつ|品质
-増やす|ふやす|增加
-複雑|ふくざつ|复杂
-含む|ふくむ|包含
-防ぐ|ふせぐ|防止
-負担|ふたん|负担
-普通|ふつう|普通
-部分|ぶぶん|部分
-変更|へんこう|变更
-保証|ほしょう|保证
-保存|ほぞん|保存
-本来|ほんらい|本来
-前もって|まえもって|事先
-賄う|まかなう|供应，维持
-曲がる|まがる|弯曲
-真面目|まじめ|认真
-増す|ます|增加
-混ざる|まざる|混杂
-貧しい|まずしい|贫穷的
-認める|みとめる|承认
-診る|みる|诊察
-向く|むく|朝向
-結ぶ|むすぶ|连接，缔结
-命じる|めいじる|命令
-明確|めいかく|明确
-目立つ|めだつ|显眼
-恵まれる|めぐまれる|得天独厚
-目標|もくひょう|目标
-基づく|もとづく|基于
-求める|もとめる|要求，寻求
-戻す|もどす|返还
-燃える|もえる|燃烧
-役割|やくわり|角色，作用
-破る|やぶる|撕破，打破
-譲る|ゆずる|让给
-許す|ゆるす|允许，原谅
-容易|ようい|容易
-要因|よういん|要因
-養成|ようせい|培养
-抑制|よくせい|抑制
-予測|よそく|预测
-喜ぶ|よろこぶ|高兴
-沸く|わく|沸腾
-割る|わる|分割，打碎
-`;
   /* ---------------- 数据层 ---------------- */
 function loadDB(){
   try{
@@ -1087,13 +755,11 @@ let DB = loadDB();
   saveDB();
 })();
 
-/* 首次运行：填充日语专业四级种子词库 */
-if (!DB['日语专业四级'] || !DB['日语专业四级'].length){
-  DB['日语专业四级'] = textToEntries(SEED_YOUJI4_RAW);
-  saveDB();
-}
+/* 清理旧版已删除词库的本地缓存 */
+REMOVED_MODES.forEach(k => delete DB[k]);
+saveDB();
 
-let currentMode = '日语专业四级';
+let currentMode = 'N1';
 
 /* ---------------- 屏幕切换 ---------------- */
 function show(id){
@@ -1981,11 +1647,109 @@ function currentVocab(){return VOCAB_BY_NAME[currentMode]||null}
 function canEditVocab(v){return !!(SESSION_USER&&v&&((v.type==='private'&&v.owner_id===SESSION_USER.id)||isAdmin()))}
 function renderModes(){const grid=document.getElementById('modeGrid');const names=VOCABS.length?VOCABS.map(v=>v.name):MODES;grid.innerHTML=names.map(m=>{const v=VOCAB_BY_NAME[m],tag=v?(v.type==='private'?'我的':'公共'):'本地',c=(DB[m]||[]).length;return '<button class="mode-chip'+(m===currentMode?' active':'')+'" data-mode="'+esc(m)+'"><span>'+esc(m)+'</span><span class="mc-count">'+c+'词 · '+tag+'</span></button>'}).join('')}
 function saveDB(){try{localStorage.setItem('shunji_vocab_cache_v2',JSON.stringify(DB))}catch(e){}}
-async function loadCloudData(){const {data:vs,error:ve}=await sb.from('vocabularies').select('*').order('created_at');if(ve)throw ve;VOCABS=vs||[];VOCAB_BY_NAME={};VOCABS.forEach(v=>VOCAB_BY_NAME[v.name]=v);DB={};const ids=VOCABS.map(v=>v.id);if(ids.length){const {data:ws,error:we}=await sb.from('words').select('vocabulary_id,w,r,m,position').in('vocabulary_id',ids).order('position');if(we)throw we;(ws||[]).forEach(x=>{const v=VOCABS.find(q=>q.id===x.vocabulary_id);if(v)(DB[v.name]||=[]).push({w:x.w,r:x.r||'',m:x.m||''})})}saveDB()}
+async function loadCloudData(){
+  const {data:vs,error:ve}=await sb.from('vocabularies').select('*').order('created_at');
+  if(ve)throw ve;
+
+  /* 已删除的四个旧词库不再显示；其余云端词库正常加载 */
+  VOCABS=(vs||[]).filter(v=>!REMOVED_MODES.has(v.name));
+  VOCAB_BY_NAME={};
+  VOCABS.forEach(v=>VOCAB_BY_NAME[v.name]=v);
+  DB={};
+
+  const ids=VOCABS.map(v=>v.id);
+  if(ids.length){
+    /* Supabase 默认单次查询可能只返回有限行，这里分页读取，避免大词库被截断 */
+    const PAGE_SIZE=1000;
+    let from=0;
+    while(true){
+      const {data:ws,error:we}=await sb.from('words')
+        .select('vocabulary_id,w,r,m,position')
+        .in('vocabulary_id',ids)
+        .order('position')
+        .range(from,from+PAGE_SIZE-1);
+      if(we)throw we;
+      const batch=ws||[];
+      batch.forEach(x=>{
+        const v=VOCABS.find(q=>q.id===x.vocabulary_id);
+        if(v)(DB[v.name]||=[]).push({w:x.w,r:x.r||'',m:x.m||''});
+      });
+      if(batch.length<PAGE_SIZE)break;
+      from+=PAGE_SIZE;
+    }
+  }
+  saveDB();
+}
 async function createPrivateVocab(name){name=name.trim();if(!name)throw Error('请输入个人词库名称');if(VOCAB_BY_NAME[name])throw Error('词库名称已存在');const {data,error}=await sb.from('vocabularies').insert({name,type:'private',owner_id:SESSION_USER.id}).select().single();if(error)throw error;VOCABS.push(data);VOCAB_BY_NAME[name]=data;DB[name]=[];return data}
-async function appendCloudWords(v,entries){if(!canEditVocab(v))throw Error('没有权限修改此词库');const base=(DB[v.name]||[]).length;const rows=entries.map((e,i)=>({vocabulary_id:v.id,w:e.w,r:e.r||'',m:e.m||'',position:base+i}));const {error}=await sb.from('words').upsert(rows,{onConflict:'vocabulary_id,w,r',ignoreDuplicates:true});if(error)throw error;await loadCloudData()}
+async function appendCloudWords(v,entries){
+  if(!canEditVocab(v))throw Error('没有权限修改此词库');
+
+  /* 同一文件内部重复的“单词+读音”只保留一条 */
+  const seen=new Set();
+  const unique=[];
+  (entries||[]).forEach(e=>{
+    const key=String(e.w||'').trim()+'|'+String(e.r||'').trim();
+    if(!e.w||seen.has(key))return;
+    seen.add(key);
+    unique.push(e);
+  });
+
+  const base=(DB[v.name]||[]).length;
+  const BATCH_SIZE=500;
+
+  for(let start=0;start<unique.length;start+=BATCH_SIZE){
+    const batch=unique.slice(start,start+BATCH_SIZE);
+    const rows=batch.map((e,i)=>({
+      vocabulary_id:v.id,
+      w:e.w,
+      r:e.r||'',
+      m:e.m||'',
+      position:base+start+i
+    }));
+    const {error}=await sb.from('words').upsert(rows,{
+      onConflict:'vocabulary_id,w,r',
+      ignoreDuplicates:true
+    });
+    if(error)throw error;
+  }
+
+  await loadCloudData();
+  return {parsed:entries.length,unique:unique.length};
+}
 async function replaceCloudWords(v,entries){if(!canEditVocab(v))throw Error('没有权限修改此词库');let q=sb.from('words').delete().eq('vocabulary_id',v.id);const {error:de}=await q;if(de)throw de;const rows=entries.map((e,i)=>({vocabulary_id:v.id,w:e.w,r:e.r||'',m:e.m||'',position:i}));if(rows.length){const {error}=await sb.from('words').insert(rows);if(error)throw error}await loadCloudData()}
-async function confirmImport(){if(!SESSION_USER){setStatus('请先登录','err');return}if(!previewEntries.length){setStatus('没有可导入的内容','err');return}try{const type=document.getElementById('importTargetType').value;let v;if(type==='public'){if(!isAdmin()){setStatus('只有开发者可以修改公共词库','err');return}v=VOCAB_BY_NAME[document.getElementById('importMode').value]}else{const name=document.getElementById('importPersonalName').value.trim();v=VOCAB_BY_NAME[name]||await createPrivateVocab(name)}if(!v)throw Error('目标词库不存在');await appendCloudWords(v,previewEntries);currentMode=v.name;refreshHome();setStatus('导入成功：当前共 '+(DB[v.name]||[]).length+' 条','ok');clearPreview()}catch(e){setStatus('导入失败：'+(e.message||e),'err')}}
+async function confirmImport(){
+  if(!SESSION_USER){setStatus('请先登录','err');return}
+  if(!previewEntries.length){setStatus('没有可导入的内容','err');return}
+  try{
+    const type=document.getElementById('importTargetType').value;
+    let v;
+    if(type==='public'){
+      if(!isAdmin()){setStatus('只有开发者可以修改公共词库','err');return}
+      v=VOCAB_BY_NAME[document.getElementById('importMode').value];
+    }else{
+      const name=document.getElementById('importPersonalName').value.trim();
+      v=VOCAB_BY_NAME[name]||await createPrivateVocab(name);
+    }
+    if(!v)throw Error('目标词库不存在');
+
+    const parsed=previewEntries.length;
+    const result=await appendCloudWords(v,previewEntries);
+    currentMode=v.name;
+    refreshHome();
+
+    const finalCount=(DB[v.name]||[]).length;
+    const duplicateCount=Math.max(0,parsed-result.unique);
+    setStatus(
+      duplicateCount
+        ? '导入完成：解析 '+parsed+' 条，文件内重复 '+duplicateCount+' 条，当前词库共 '+finalCount+' 条'
+        : '导入完成：解析 '+parsed+' 条，当前词库共 '+finalCount+' 条',
+      'ok'
+    );
+    clearPreview();
+  }catch(e){
+    setStatus('导入失败：'+(e.message||e),'err');
+  }
+}
 function openEditor(){editorMode=currentMode;const v=currentVocab();if(!canEditVocab(v)){toast('公共词库为只读；请建立个人词库');return}editorEntries=(DB[editorMode]||[]).map(e=>({...e}));editorSelected=new Set();document.getElementById('edMode').textContent=editorMode;document.getElementById('edCount').textContent=editorEntries.length;document.getElementById('edSearch').value='';document.getElementById('edDelCount').value='';setEdStatus('');renderEditor();show('editor')}
 async function saveEditor(){collectEdits();const v=VOCAB_BY_NAME[editorMode];if(!canEditVocab(v)){setEdStatus('没有权限修改此词库','err');return}try{await replaceCloudWords(v,editorEntries);document.getElementById('edCount').textContent=editorEntries.length;refreshHome();setEdStatus('已保存：'+editorEntries.length+' 条','ok')}catch(e){setEdStatus('保存失败：'+(e.message||e),'err')}}
 function saveWrongDB(){try{localStorage.setItem(LS_WRONG,JSON.stringify(WRONG_DB))}catch(e){}}
@@ -2062,7 +1826,7 @@ async function loadCloudStats(){
 }
 let authMode='login';function authMail(id){return id.trim().toLowerCase()+'@shunshiriyu.app'}function authMsg(t,c){const e=document.getElementById('authStatus');e.textContent=t||'';e.className='auth-status '+(c||'')}
 function updateAuth(){const reg=authMode==='register',dev=authMode==='dev';document.getElementById('authUserTab').classList.toggle('active',!dev);document.getElementById('authDevTab').classList.toggle('active',dev);document.getElementById('authPassword2').style.display=reg?'':'none';document.getElementById('authSubmit').textContent=reg?'注 册':'登 录';document.getElementById('authRegister').style.display=reg?'none':'';document.getElementById('authHint').textContent=dev?'开发者权限由数据库 role 控制，不在网页源代码保存密钥。':'普通用户可使用公共词库，并创建、编辑自己的个人词库。'}
-async function enterCloud(user){SESSION_USER=user;const {data:pf,error}=await sb.from('profiles').select('id,username,role').eq('id',user.id).single();if(error){authMsg('账号资料读取失败：'+error.message,'err');return}PROFILE=pf;if(authMode==='dev'&&!isAdmin()){await sb.auth.signOut();SESSION_USER=null;PROFILE=null;authMsg('这个账号不是开发者账号','err');return}try{await loadCloudData();await loadCloudWrong();await loadCloudStats()}catch(e){authMsg('云端数据加载失败：'+(e.message||e),'err');return}currentMode=VOCAB_BY_NAME[currentMode]?currentMode:(VOCAB_BY_NAME['日语专业四级']?'日语专业四级':(VOCABS[0]?.name||''));document.getElementById('currentUserName').textContent=pf.username||'—';document.getElementById('currentUserRole').textContent=isAdmin()?'开发者':'用户';refreshHome();show('home');bumpStat('opens');checkReport()}
+async function enterCloud(user){SESSION_USER=user;const {data:pf,error}=await sb.from('profiles').select('id,username,role').eq('id',user.id).single();if(error){authMsg('账号资料读取失败：'+error.message,'err');return}PROFILE=pf;if(authMode==='dev'&&!isAdmin()){await sb.auth.signOut();SESSION_USER=null;PROFILE=null;authMsg('这个账号不是开发者账号','err');return}try{await loadCloudData();await loadCloudWrong();await loadCloudStats()}catch(e){authMsg('云端数据加载失败：'+(e.message||e),'err');return}currentMode=VOCAB_BY_NAME[currentMode]?currentMode:(VOCAB_BY_NAME['N1']?'N1':(VOCABS[0]?.name||''));document.getElementById('currentUserName').textContent=pf.username||'—';document.getElementById('currentUserRole').textContent=isAdmin()?'开发者':'用户';refreshHome();show('home');bumpStat('opens');checkReport()}
 async function loginCloud(){const id=document.getElementById('authId').value.trim(),pw=document.getElementById('authPassword').value;if(!id||!pw){authMsg('请输入 ID 与 Password','err');return}authMsg('登录中…');const {data,error}=await sb.auth.signInWithPassword({email:authMail(id),password:pw});if(error){authMsg(error.message,'err');return}await enterCloud(data.user)}
 async function registerCloud(){const id=document.getElementById('authId').value.trim(),pw=document.getElementById('authPassword').value,p2=document.getElementById('authPassword2').value;if(!/^[A-Za-z0-9_-]{3,30}$/.test(id)){authMsg('ID 需为 3-30 位字母、数字、下划线或短横线','err');return}if(pw.length<6){authMsg('Password 至少 6 位','err');return}if(pw!==p2){authMsg('两次 Password 不一致','err');return}authMsg('注册中…');const {data,error}=await sb.auth.signUp({email:authMail(id),password:pw,options:{data:{username:id}}});if(error){authMsg(error.message,'err');return}if(data.session)await enterCloud(data.user);else{authMsg('注册成功。若启用了邮箱确认，请先完成确认后再登录。','ok');authMode='login';updateAuth()}}
 function initAuth(){document.getElementById('authUserTab').onclick=()=>{authMode='login';updateAuth()};document.getElementById('authDevTab').onclick=()=>{authMode='dev';updateAuth()};document.getElementById('authSubmit').onclick=()=>authMode==='register'?registerCloud():loginCloud();document.getElementById('authRegister').onclick=()=>{authMode='register';updateAuth()};document.getElementById('btnLogout').onclick=async()=>{await sb.auth.signOut();location.reload()};updateAuth();if(!SHUNJI_URL||!SHUNJI_ANON){authMsg('请在同目录 config.js 中填写 Supabase 配置。','err');return}sb=window.supabase.createClient(SHUNJI_URL,SHUNJI_ANON);sb.auth.getSession().then(r=>{if(r.data.session)enterCloud(r.data.session.user)})}
