@@ -1,13 +1,10 @@
-# 瞬時単語テスト PWA
+# 修改说明
 
-这是纯静态 PWA 版本，保留原有单词测试、Supabase 登录与 Edge TTS 功能。
-
-## 部署
-
-将整个项目上传到 GitHub，继续使用 Zeabur 部署即可。需要使用 HTTPS。
-
-## 安装
-
-登录页面提供“＋ 安装到手机 / 桌面”按钮。支持原生 PWA 安装的浏览器会直接弹出安装窗口；iPhone/iPad 会提示通过“添加到主屏幕”安装。
-
-本版本不包含 Whisper、录音评分或 OpenAI 后端。
+## APK 隐藏安装入口修正版
+- 普通网页版（电脑浏览器、手机浏览器、PWA）均保留“安装PC端／移动端”。
+- 点击入口直接下载站点根目录 `/base.apk`。
+- 只有官方 APK 内 ToApp WebView 隐藏该入口。
+- APK 识别不依赖设备类型和 User-Agent（原 APK 会把 UA 设置成 Windows Chrome）。
+- 识别方式同时支持 ToApp 的 `window.ToAppExport` Bridge 和 `window.__toappExportTrackerInstalled` 页面标记。
+- 对 Bridge 延迟注入增加轮询，最长检测 10 秒。
+- Service Worker 缓存升级到 v7。
