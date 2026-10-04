@@ -554,95 +554,6 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
 }
-/* ==================== 发音模块（Edge TTS + 浏览器原生降级） ==================== */
-let jaVoice = null;
-
-/* —— 浏览器原生 TTS（降级方案，必须保留） —— */
-function pickBestJaVoice() {
-  if (!('speechSynthesis' in window)) return null;
-  const voices = speechSynthesis.getVoices();
-  if (!voices.length) return null;
-  const ja = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('ja'));
-  if (!ja.length) return null;
-  jaVoice = ja.find(v => v.localService) || ja[0];
-  return jaVoice;
-}
-
-function initVoices() {
-  if (!('speechSynthesis' in window)) return;
-  pickBestJaVoice();
-  speechSynthesis.onvoiceschanged = pickBestJaVoice;
-  setTimeout(pickBestJaVoice, 500);
-  setTimeout(pickBestJaVoice, 1500);
-}
-
-function speakJapanese(text) {
-  if (!text || !('speechSynthesis' in window)) return;
-  if (!jaVoice) pickBestJaVoice();
-  speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = 'ja-JP';
-  utter.rate = 0.85;
-  utter.pitch = 1.0;
-  utter.volume = 1.0;
-  if (jaVoice) utter.voice = jaVoice;
-  speechSynthesis.speak(utter);
-}
-
-/* —— Edge TTS 主方案 —— */
-async function speakWithEdgeTTS(text) {
-  if (!text) return;
-  const btn = document.getElementById('btnSpeak');
-
-  /* 模块没加载好 → 降级 */
-  if (typeof window.generateSpeech !== 'function') {
-    console.warn('[发音] Edge TTS 未就绪，使用浏览器原生 TTS');
-    speakJapanese(text);
-    return;
-  }
-
-  try {
-    if (btn) btn.classList.add('speaking');
-
-    const audioBuffer = await window.generateSpeech({
-      text: text,
-      voice: 'ja-JP-NanamiNeural',   // 女声；男声用 ja-JP-KeitaNeural
-      rate: '+0%',
-      volume: '+0%',
-      pitch: '+0Hz'
-    });
-
-    const blob = new Blob([audioBuffer], { type: 'audio/mpeg' });
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-
-    audio.onended = () => {
-      if (btn) btn.classList.remove('speaking');
-      URL.revokeObjectURL(url);
-    };
-    audio.onerror = () => {
-      if (btn) btn.classList.remove('speaking');
-      URL.revokeObjectURL(url);
-      speakJapanese(text);          // 降级
-    };
-
-    await audio.play();
-  } catch (e) {
-    console.warn('[发音] Edge TTS 失败，降级：', e);
-    if (btn) btn.classList.remove('speaking');
-    speakJapanese(text);            // 降级
-  }
-}
-
-/* —— 发音入口：优先 Edge TTS —— */
-function speakCurrentWord() {
-  const cur = state.queue[state.idx];
-  if (!cur) return;
-  speakWithEdgeTTS(cur.r || cur.w);
-}
-
-/* 启动时初始化浏览器原生语音 */
-initVoices();
 /* ---------------- 振り仮名 自动切分 ---------------- */
 function buildRuby(surface, reading){
   if (!surface) return '';
@@ -1554,6 +1465,61 @@ function bind(){
 /* --- 发音按钮 --- */
 document.getElementById('btnSpeak').addEventListener('click', (e) => {
   e.stopPropagation();
+  /* —— VoiceCafe-TTS 唯一发音方案 —— */
+async function speakWithVoiceCafe(text) {
+  function speakCurrentWord() {
+  const cur = state.queue[state.idx];
+  if (!cur) return;
+  speakWithVoiceCafe(cur.r || cur.w);  // 这一行是新的
+}
+  if (!text) return;
+  const btn = document.getElementById('btnSpeak');
+  
+  // ⚠️ 替换为你自己部署的 Cloudflare Worker 地址（不要带末尾的斜杠）
+  const API_URL = 'https://voice.pangjingshuo05.workers.dev/';
+
+  try {
+    if (btn) btn.classList.add('speaking');
+
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        input: text,                 // 要转换的文本
+        voice: 'ja-JP-NanamiNeural', // 日语女声，可换成 ja-JP-KeitaNeural 男声
+        speed: 1.0,                  // 语速
+        pitch: '0',
+        style: 'general'
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`VoiceCafe HTTP ${response.status}`);
+    }
+
+    const audioBlob = await response.blob();
+    const url = URL.createObjectURL(audioBlob);
+    const audio = new Audio(url);
+
+    audio.onended = () => {
+      if (btn) btn.classList.remove('speaking');
+      URL.revokeObjectURL(url);
+    };
+    audio.onerror = () => {
+      if (btn) btn.classList.remove('speaking');
+      URL.revokeObjectURL(url);
+      toast('发音播放失败');
+    };
+
+    await audio.play();
+  } catch (e) {
+    console.warn('[发音] VoiceCafe 失败：', e);
+    if (btn) btn.classList.remove('speaking');
+    toast('语音合成失败，请检查网络');
+  }
+}
   speakCurrentWord();
   playClick();
 });
@@ -1564,12 +1530,7 @@ document.getElementById('wordDisplay').addEventListener('click', () => {
   playClick();
 });
 
-/* --- 首次交互解锁音频（浏览器限制） --- */
-document.addEventListener('click', function unlockAudio(){
-  if ('speechSynthesis' in window) loadJaVoice();
-  document.removeEventListener('click', unlockAudio);
-}, { once: true });
-  /* --- 主页：模式选择 --- */
+/* --- 主页：模式选择 --- */
   document.getElementById('modeGrid').addEventListener('click', e => {
     const btn = e.target.closest('.mode-chip');
     if (!btn) return;
@@ -2188,11 +2149,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
-
-<script type="module">
-import { generateSpeech } from 'https://cdn.jsdelivr.net/npm/@bestcodes/edge-tts@3.0.1/dist/index.min.js';
-window.generateSpeech = generateSpeech;
-</script>
-
+  
 </body>
 </html>
