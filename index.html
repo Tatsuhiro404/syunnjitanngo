@@ -1476,7 +1476,7 @@ async function speakWithVoiceCafe(text) {
   const btn = document.getElementById('btnSpeak');
   
   // ⚠️ 替换为你自己部署的 Cloudflare Worker 地址（不要带末尾的斜杠）
-  const API_URL = 'https://voice.pangjingshuo05.workers.dev/';
+  const API_URL = 'https://voice.pangjingshuo05.workers.dev/v1/audio/speech';';
 
   try {
     if (btn) btn.classList.add('speaking');
