@@ -71,6 +71,8 @@ input,select,textarea{font-family:inherit;font-size:15px;}
 .size-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;}
 .size-pill{padding:6px 14px;border-radius:20px;background:#f2f3f5;font-size:13px;color:#555;transition:.15s;}
 .size-pill.active{background:var(--primary);color:#fff;}
+.quiz-timer{font-size:13px;color:var(--primary);font-weight:700;min-width:42px;text-align:center}.quiz-timer.warn{color:var(--red)}
+.ai-box{padding:10px 12px;border-radius:10px;background:#f7f8fa;color:#666;font-size:12px;line-height:1.7;margin-top:10px}.ai-box strong{color:#3c4249}
 
 .btn{
   display:inline-flex;align-items:center;justify-content:center;padding:13px 20px;
@@ -287,6 +289,7 @@ input,select,textarea{font-family:inherit;font-size:15px;}
         <button class="size-pill" data-n="100">100</button>
         <button class="size-pill" data-n="0">全部</button>
       </div>
+      <div class="stat-line mt10"><span>限时模式</span><select class="select" id="timeLimit" style="width:auto;min-width:120px"><option value="0">不限时</option><option value="5">5s</option><option value="10">10s</option><option value="20">20s</option></select></div>
     </div>
 
     <button class="btn btn-primary btn-big" id="btnStart">开 始 测 试</button>
@@ -310,7 +313,7 @@ input,select,textarea{font-family:inherit;font-size:15px;}
 <section id="screen-quiz" class="screen">
   <div class="topbar">
     <span class="icon-btn" id="quizMode">—</span>
-    <span style="font-size:14px;color:#8a9099;font-weight:600;" id="quizProgress">0 / 0</span>
+    <span style="font-size:14px;color:#8a9099;font-weight:600;" id="quizProgress">0 / 0</span><span class="quiz-timer" id="quizTimer">∞</span>
     <span style="display:flex;gap:8px;">
       <button class="icon-btn" id="btnPause">暂停</button>
       <button class="icon-btn danger" id="btnStop">终止</button>
@@ -364,11 +367,18 @@ input,select,textarea{font-family:inherit;font-size:15px;}
     <div class="card">
       <h3>1 · 选择目标模式</h3>
       <select class="select" id="importMode"></select>
-      <h3 class="mt14">2 · 词库设置</h3><select class="select" id="importTargetType"><option value="private">我的个人词库</option><option value="public">公共词库（仅开发者）</option></select><input class="input mt10" id="importPersonalName" placeholder="个人词库名称，例如：N2 重点词" maxlength="60"><div class="import-note" id="importPermissionNote">普通用户只能写入自己的个人词库；公共词库由开发者维护。</div>
+      <h3 class="mt14">2 · 词库设置</h3><select class="select" id="importTargetType"><option value="private">我的个人词库</option><option value="public">公共词库（仅开发者）</option></select><input class="input mt10" id="importPersonalName" placeholder="个人词库名称，例如：N2 重点词" maxlength="60"><input class="input mt10" id="importPublicName" placeholder="新公共词库名称，例如：商务英语高频词" maxlength="60" style="display:none"><button class="btn btn-ghost mt10" id="btnCreatePublicVocab" style="display:none">创建新的公共词库</button><div class="import-note" id="importPermissionNote">普通用户只能写入自己的个人词库；公共词库由开发者维护。</div>
     </div>
 
     <div class="card">
-      <h3>3 · 上传文件</h3>
+      <h3>3 · 导入语言与辅助模式</h3>
+      <select class="select" id="importLanguage"><option value="auto">自动识别 / 通用格式</option><option value="en">英语</option><option value="ko">韩语</option><option value="fr">法语</option><option value="ja">日语</option><option value="de">德语</option><option value="es">西班牙语</option><option value="zh">中文</option><option value="other">其他语种</option></select>
+      <label class="stat-line mt10" style="justify-content:flex-start;gap:10px"><input type="checkbox" id="aiAssistMode"> <span>辅助导入模式：只填写外语词汇，由 AI 自动补全中文词义</span></label>
+      <div class="ai-box" id="aiAssistNote"><strong>通用导入格式：</strong>外语词汇｜中文词义；如果有读音，也支持“词汇｜读音｜词义”。开启辅助模式后，每行只写一个外语词即可。AI 补全优先使用 DeepSeek；DeepSeek 余额/接口不可用时自动尝试备用翻译，仍失败则保留空释义并允许手动补全，不影响普通导入。</div>
+    </div>
+
+    <div class="card">
+      <h3>4 · 上传文件</h3>
       <div class="dropzone" id="dropZone">
         <input type="file" id="fileInput" hidden
           accept=".txt,.csv,.tsv,.md,.xlsx,.xls,.docx,.pdf,.jpg,.jpeg,.png,.webp,.bmp">
@@ -385,12 +395,12 @@ input,select,textarea{font-family:inherit;font-size:15px;}
     <div class="card">
       <h3>或直接粘贴文本</h3>
       <textarea class="textarea" id="pasteArea" rows="6"
-        placeholder="每行一条，支持以下格式：&#10;勉強|べんきょう|学习&#10;勉強[べんきょう] 学习&#10;勉強	べんきょう	学习&#10;勉強 べんきょう 学习"></textarea>
+        placeholder="每行一条：&#10;日语：勉強|べんきょう|学习&#10;英语：apple|苹果&#10;韩语：사과|苹果&#10;法语：bonjour|你好&#10;辅助模式：apple"></textarea>
       <button class="btn btn-ghost mt10" id="btnParsePaste">解 析 文 本</button>
     </div>
 
     <div class="card" id="previewCard" style="display:none">
-      <h3>4 · 预览与确认 <span id="previewCount" style="color:var(--primary)"></span></h3>
+      <h3>5 · 预览与确认 <span id="previewCount" style="color:var(--primary)"></span></h3>
       <div class="preview-list" id="previewList"></div>
       <div class="row mt14">
         <button class="btn btn-primary" id="btnConfirmImport">确 认 导 入</button>
@@ -674,7 +684,7 @@ function buildRuby(surface, reading){
 
 /* ---------------- 文本 → 词条 ---------------- */
 function parseLine(raw){
-  let line = String(raw || '').replace(/\u3000/g, ' ').trim();
+  let line = String(raw || '').replace(/^\uFEFF/, '').replace(/\u3000/g, ' ').trim();
   if (!line) return null;
   if (/^(单词|単語|word|序号|番号)[\s\|]/i.test(line)) return null;
 
@@ -686,6 +696,10 @@ function parseLine(raw){
     parts = line.split('|');
   } else if (line.includes('\t')){
     parts = line.split('\t');
+  } else if (line.includes(';')){
+    parts = line.split(';');
+  } else if (line.includes(',') && !/^https?:/i.test(line)){
+    parts = line.split(',');
   } else if (/\s{2,}/.test(line)){
     parts = line.split(/\s{2,}/);
   } else {
@@ -798,8 +812,37 @@ const state = {
   phase: 1,
   wrong: [],
   total: 0,
-  paused: false
+  paused: false,
+  timeLimit: 0,
+  remaining: 0,
+  timerId: null
 };
+
+function clearQuizTimer(){
+  if(state.timerId){clearInterval(state.timerId);state.timerId=null;}
+}
+function startQuizTimer(){
+  clearQuizTimer();
+  const el=document.getElementById('quizTimer');
+  state.remaining=Number(state.timeLimit)||0;
+  if(!state.timeLimit){el.textContent='∞';el.classList.remove('warn');return;}
+  const tick=()=>{
+    el.textContent=state.remaining+'s';
+    el.classList.toggle('warn',state.remaining<=3);
+    if(state.remaining<=0){
+      clearQuizTimer();
+      if(state.phase===1 && !state.paused){
+        state.phase=2;
+        toast('时间到，已显示词义，请选择下一步');
+        renderCard();
+      }
+      return;
+    }
+    state.remaining--;
+  };
+  tick();
+  state.timerId=setInterval(tick,1000);
+}
 
 function startQuiz(){
   const list = (DB[currentMode] || []).slice();
@@ -823,16 +866,20 @@ shuffle(picked);            // 二次洗牌，彻底消除任何顺序残留
   state.wrong  = [];
   state.total  = size;
   state.paused = false;
+  state.timeLimit = parseInt(document.getElementById('timeLimit')?.value || '0',10) || 0;
 
   document.getElementById('quizMode').textContent = currentMode;
   document.getElementById('pauseOverlay').classList.remove('show');
   show('quiz');
   renderCard();
+  startQuizTimer();
 }
 
 function renderCard(){
   const cur = state.queue[state.idx];
   if (!cur){ finishQuiz(); return; }
+  if(state.phase===1) startQuizTimer();
+  else clearQuizTimer();
 
   const wd = document.getElementById('wordDisplay');
   const md = document.getElementById('meaningDisplay');
@@ -860,6 +907,7 @@ function renderCard(){
 }
 
 function goNextCard(){
+  clearQuizTimer();
   bumpStat('quizzed');
   state.idx++;  state.phase = 1;
   if (state.idx >= state.queue.length){ finishQuiz(); return; }
@@ -899,13 +947,16 @@ function onWrong(){
 function togglePause(){
   if (!document.getElementById('screen-quiz').classList.contains('active')) return;
   state.paused = true;
+  clearQuizTimer();
   document.getElementById('pauseOverlay').classList.add('show');
 }
 function resumeQuiz(){
   state.paused = false;
   document.getElementById('pauseOverlay').classList.remove('show');
+  if(state.phase===1) startQuizTimer();
 }
 function stopQuiz(){
+  clearQuizTimer();
   state.paused = false;
   document.getElementById('pauseOverlay').classList.remove('show');
   finishQuiz();
@@ -913,6 +964,8 @@ function stopQuiz(){
 
 /* ---------------- 结果页 ---------------- */
 function finishQuiz(){
+  clearQuizTimer();
+  document.getElementById('quizTimer').textContent='∞';
   const list = document.getElementById('wrongList');
   document.getElementById('resultSummary').textContent =
     '本轮共 ' + state.total + ' 题 · 错词 ' + state.wrong.length + ' 个';
@@ -1012,6 +1065,73 @@ async function parseImage(file){
   return (r && r.data && r.data.text) ? r.data.text : '';
 }
 
+const AI_LANGUAGE_NAMES={auto:'自动识别',en:'英语',ko:'韩语',fr:'法语',ja:'日语',de:'德语',es:'西班牙语',zh:'中文',other:'其他语种'};
+function findLocalMeaning(word){
+  const target=String(word||'').trim();
+  if(!target)return '';
+  const pools=Object.values(DB||{});
+  for(const list of pools){
+    const hit=(list||[]).find(e=>String(e?.w||'').trim()===target && String(e?.m||'').trim());
+    if(hit)return String(hit.m).trim();
+  }
+  return '';
+}
+async function aiTranslateEntries(entries){
+  const items=(entries||[]).filter(e=>e.w).map((e,i)=>({index:i,word:e.w}));
+  if(!items.length)return entries;
+  if(!sb) throw new Error('云端服务尚未连接');
+  const language=document.getElementById('importLanguage')?.value||'auto';
+  const out=entries.map(e=>({...e}));
+  let usedFallback=false, usedManual=false, usedDeepSeek=false, localHits=0;
+  // 先使用已经存在于本机/云端词库中的释义，完全不消耗任何 AI token。
+  out.forEach((e,i)=>{
+    if(!String(e.m||'').trim()){
+      const m=findLocalMeaning(e.w);
+      if(m){e.m=m;localHits++;}
+    }
+  });
+  const needItems=items.filter(x=>!String(out[x.index]?.m||'').trim());
+  const BATCH=30;
+  for(let i=0;i<needItems.length;i+=BATCH){
+    const batch=needItems.slice(i,i+BATCH);
+    setStatus('DeepSeek 正在补全 '+Math.min(i+BATCH,needItems.length)+' / '+needItems.length+' …');
+    let data,error;
+    ({data,error}=await sb.functions.invoke('translate-vocab',{body:{language,items:batch}}));
+    if(error) throw error;
+    if(!data || !Array.isArray(data.items))throw new Error('AI 翻译服务返回格式错误');
+    if(data.provider==='fallback' || data.provider==='mixed')usedFallback=true;
+    if(data.provider==='manual')usedManual=true;
+    data.items.forEach(x=>{
+      const base=out[x.index];
+      if(base){
+        const meaning=String(x.meaning||'').trim();
+        if(meaning){
+          base.m=meaning;
+          if(x.source==='deepseek')usedDeepSeek=true;
+          if(x.source==='fallback')usedFallback=true;
+        }else usedManual=true;
+      }
+    });
+  }
+  const unresolved=out.filter(e=>!String(e.m||'').trim()).length;
+  if(usedFallback && !unresolved){
+    setStatus('DeepSeek 不可用，已自动切换备用翻译；共补全 '+out.length+' 条', 'ok');
+  }else if(usedFallback){
+    setStatus('DeepSeek 部分不可用，已切换备用翻译；仍有 '+unresolved+' 条需要手动填写', 'ok');
+  }else if(usedManual){
+    setStatus('DeepSeek/备用翻译均不可用；仍可继续预览，空释义可手动补全', 'ok');
+  }else if(usedDeepSeek || localHits){
+    setStatus('释义补全完成：AI '+(usedDeepSeek?'已调用':'未调用')+'，本地复用 '+localHits+' 条', 'ok');
+  }
+  return out;
+}
+async function maybeAssistEntries(entries){
+  if(!document.getElementById('aiAssistMode')?.checked)return entries;
+  const onlyWords=entries.map(e=>({w:e.w,r:e.r||'',m:e.m||''}));
+  const needs=onlyWords.map(e=>e.m?e:{...e,m:''});
+  return await aiTranslateEntries(needs);
+}
+
 async function handleFile(file){
   if (!file) return;
   const name = file.name.toLowerCase();
@@ -1035,7 +1155,11 @@ async function handleFile(file){
       return;
     }
 
-    const entries = textToEntries(text);
+    let entries = textToEntries(text);
+    if(document.getElementById('aiAssistMode')?.checked){
+      entries=entries.map(e=>({w:e.w,r:'',m:''}));
+      entries=await maybeAssistEntries(entries);
+    }
     if (!entries.length){
       setStatus('未能识别出词条，请检查文件内容或改用「粘贴文本」', 'err');
       return;
@@ -1049,27 +1173,33 @@ async function handleFile(file){
 }
 
 function setPreview(entries){
-  previewEntries = entries;
+  previewEntries = entries.map(e => ({...e}));
   const card = document.getElementById('previewCard');
   const list = document.getElementById('previewList');
   document.getElementById('previewCount').textContent = '（' + entries.length + ' 条）';
 
   const head = '<div class="preview-row head">' +
-    '<span>#</span><span>单词</span><span>读音</span><span>释义</span></div>';
-  const body = entries.slice(0, 300).map((e, i) =>
+    '<span>#</span><span>单词</span><span>读音</span><span>释义（可编辑）</span></div>';
+  const body = previewEntries.slice(0, 300).map((e, i) =>
     '<div class="preview-row">' +
       '<span class="pv-idx">' + (i + 1) + '</span>' +
       '<span class="pv-w">' + esc(e.w) + '</span>' +
       '<span class="pv-r">' + esc(e.r) + '</span>' +
-      '<span class="pv-m">' + esc(e.m) + '</span>' +
+      '<input class="input pv-m" data-preview-index="' + i + '" value="' + esc(e.m || '') + '" placeholder="可手动填写中文词义">' +
     '</div>'
   ).join('');
-  const more = entries.length > 300
+  const more = previewEntries.length > 300
     ? '<div class="preview-row"><span></span><span style="color:#8a9099">… 其余 ' +
-      (entries.length - 300) + ' 条未显示（仍会全部导入）</span></div>'
+      (previewEntries.length - 300) + ' 条未显示（仍会全部导入）</span></div>'
     : '';
 
   list.innerHTML = head + body + more;
+  list.querySelectorAll('[data-preview-index]').forEach(el => {
+    el.addEventListener('input', () => {
+      const i = Number(el.dataset.previewIndex);
+      if (previewEntries[i]) previewEntries[i].m = el.value;
+    });
+  });
   card.style.display = '';
 }
 
@@ -1509,16 +1639,24 @@ document.addEventListener('click', function unlockAudio(){
     if (f) handleFile(f);
   });
 
-  document.getElementById('btnParsePaste').addEventListener('click', () => {
+  document.getElementById('btnParsePaste').addEventListener('click', async () => {
     const text = document.getElementById('pasteArea').value;
-    const entries = textToEntries(text);
+    let entries = textToEntries(text);
+    if(document.getElementById('aiAssistMode')?.checked){
+      entries=entries.map(e=>({w:e.w,r:'',m:''}));
+      try{ entries=await maybeAssistEntries(entries); }catch(err){ setStatus('AI 翻译失败：'+(err.message||err),'err'); return; }
+    }
     if (!entries.length){ setStatus('未能解析出词条', 'err'); return; }
     setPreview(entries);
     setStatus('解析成功：共 ' + entries.length + ' 条', 'ok');
   });
 
   document.getElementById('btnConfirmImport').addEventListener('click', confirmImport);
-  document.getElementById('btnClearPreview').addEventListener('click', () => {
+  document.getElementById('aiAssistMode').addEventListener('change', e => {
+  document.getElementById('aiAssistNote').innerHTML=e.target.checked ? '<strong>辅助模式已开启：</strong>每行只写外语词汇即可。点击解析后会调用云端 AI，自动生成中文词义，再进入预览与导入。' : '<strong>通用导入格式：</strong>外语词汇｜中文词义；如果有读音，也支持“词汇｜读音｜词义”。开启辅助模式后，每行只写一个外语词即可。';
+});
+
+document.getElementById('btnClearPreview').addEventListener('click', () => {
     clearPreview();
     setStatus('');
   });
@@ -1720,12 +1858,21 @@ async function replaceCloudWords(v,entries){if(!canEditVocab(v))throw Error('没
 async function confirmImport(){
   if(!SESSION_USER){setStatus('请先登录','err');return}
   if(!previewEntries.length){setStatus('没有可导入的内容','err');return}
+  // 将预览区手动修改的释义同步回数据，供 DeepSeek/备用服务失败时人工补全。
+  document.querySelectorAll('[data-preview-index]').forEach(el=>{
+    const i=Number(el.dataset.previewIndex);
+    if(previewEntries[i]) previewEntries[i].m=String(el.value||'').trim();
+  });
   try{
     const type=document.getElementById('importTargetType').value;
     let v;
     if(type==='public'){
       if(!isAdmin()){setStatus('只有开发者可以修改公共词库','err');return}
       v=VOCAB_BY_NAME[document.getElementById('importMode').value];
+      if(!v){
+        const name=document.getElementById('importPublicName').value.trim();
+        if(name) v=VOCAB_BY_NAME[name];
+      }
     }else{
       const name=document.getElementById('importPersonalName').value.trim();
       v=VOCAB_BY_NAME[name]||await createPrivateVocab(name);
@@ -1836,8 +1983,10 @@ function bindCloudExtras(){
   document.getElementById('importTargetType').addEventListener('change',()=>{
     const t=document.getElementById('importTargetType').value;
     document.getElementById('importPersonalName').style.display=t==='private'?'':'none';
+    document.getElementById('importPublicName').style.display=t==='public'?'':'none';
+    document.getElementById('btnCreatePublicVocab').style.display=t==='public'&&isAdmin()?'':'none';
     document.getElementById('importPermissionNote').textContent=t==='public'
-      ?'开发者可以维护公共词库；普通用户不可写入公共词库。'
+      ?'开发者可以选择已有公共词库，也可以输入名称创建新的公共词库；普通用户不可写入公共词库。'
       :'个人词库只属于当前账号，其他设备登录同一账号后会同步。';
   });
 
@@ -1850,9 +1999,29 @@ function bindCloudExtras(){
     if(isAdmin()){t.style.display='';t.value=v?.type==='public'?'public':'private'}
     else{t.style.display='none';t.value='private'}
     n.style.display=t.value==='private'?'':'none';
+    document.getElementById('importPublicName').style.display=t.value==='public'?'':'none';
+    document.getElementById('btnCreatePublicVocab').style.display=t.value==='public'&&isAdmin()?'':'none';
     n.value=v?.type==='private'?v.name:'';
+    document.getElementById('importPublicName').value='';
     setStatus('');
     show('import');
+  });
+
+  document.getElementById('btnCreatePublicVocab').addEventListener('click',async()=>{
+    if(!isAdmin()){toast('只有开发者可以创建公共词库');return;}
+    const name=document.getElementById('importPublicName').value.trim();
+    if(!name){setStatus('请输入新的公共词库名称','err');return;}
+    if(VOCAB_BY_NAME[name]){setStatus('词库名称已存在','err');return;}
+    try{
+      const {data,error}=await sb.from('vocabularies').insert({name,type:'public',owner_id:null}).select().single();
+      if(error)throw error;
+      VOCABS.push(data); VOCAB_BY_NAME[name]=data; DB[name]=[]; saveDB();
+      const sel=document.getElementById('importMode');
+      sel.innerHTML=VOCABS.map(v=>'<option value="'+esc(v.name)+'">'+esc(v.name)+' · '+(v.type==='private'?'我的':'公共')+'</option>').join('');
+      sel.value=name;
+      document.getElementById('importPublicName').value='';
+      currentMode=name; refreshHome(); setStatus('已创建公共词库「'+name+'」，现在可以继续导入','ok');
+    }catch(e){setStatus('创建失败：'+(e.message||e),'err');}
   });
 
   /* ========== 新增：删除词库功能 ========== */
