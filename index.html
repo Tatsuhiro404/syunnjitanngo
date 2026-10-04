@@ -1096,7 +1096,7 @@ async function aiTranslateEntries(entries){
     const batch=needItems.slice(i,i+BATCH);
     setStatus('DeepSeek 正在补全 '+Math.min(i+BATCH,needItems.length)+' / '+needItems.length+' …');
     let data,error;
-    ({data,error}=await sb.functions.invoke('AItranslate',{body:{language,items:batch}}));
+    ({data,error}=await sb.functions.invoke('quick-service',{body:{language,items:batch}}));
     if(error) throw error;
     if(!data || !Array.isArray(data.items))throw new Error('AI 翻译服务返回格式错误');
     if(data.provider==='fallback' || data.provider==='mixed')usedFallback=true;
