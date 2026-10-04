@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shunji-tango-pwa-v8';
+const CACHE_NAME = 'shunji-tango-pwa-v9';
 const APP_SHELL = [
   '/',
   '/index.html',
