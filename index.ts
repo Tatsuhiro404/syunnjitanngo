@@ -54,7 +54,7 @@ async function translateByDeepSeek(language: string, items: VocabItem[]): Promis
   if (!apiKey) throw new Error("服务端未配置 DEEPSEEK_API_KEY");
 
   // 当前 DeepSeek 官方文档推荐的通用模型名。
-  const model = Deno.env.get("DEEPSEEK_TRANSLATE_MODEL") || "deepseek-flash";
+  const model = Deno.env.get("DEEPSEEK_TRANSLATE_MODEL") || "deepseek-chat";
   const prompt = [
     "你是多语种学习词库的中文释义助手。",
     `输入语言：${LANG_NAMES[language] || "自动识别"}`,
@@ -82,8 +82,6 @@ async function translateByDeepSeek(language: string, items: VocabItem[]): Promis
       ],
       stream: false,
       response_format: { type: "json_object" },
-      // 词义补全不需要深度推理，关闭 thinking 可避免产生额外 reasoning token。
-      thinking: { type: "disabled" },
       max_tokens: Math.max(256, items.length * 32),
     }),
   });
