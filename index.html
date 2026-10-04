@@ -1465,18 +1465,13 @@ function bind(){
 /* --- 发音按钮 --- */
 document.getElementById('btnSpeak').addEventListener('click', (e) => {
   e.stopPropagation();
-  /* —— VoiceCafe-TTS 唯一发音方案 —— */
+/* —— VoiceCafe-TTS 唯一发音方案 —— */
 async function speakWithVoiceCafe(text) {
-  function speakCurrentWord() {
-  const cur = state.queue[state.idx];
-  if (!cur) return;
-  speakWithVoiceCafe(cur.r || cur.w);  // 这一行是新的
-}
   if (!text) return;
   const btn = document.getElementById('btnSpeak');
   
-  // ⚠️ 替换为你自己部署的 Cloudflare Worker 地址（不要带末尾的斜杠）
-  const API_URL = 'const API_URL = 'https://voice.pangjingshuo05.workers.dev/v1/audio/speech';';';
+  // ⚠️ 替换为你自己部署的 Cloudflare Worker 地址（正确格式，不要重复写 const）
+  const API_URL = 'https://voice.pangjingshuo05.workers.dev/v1/audio/speech';
 
   try {
     if (btn) btn.classList.add('speaking');
@@ -1487,9 +1482,9 @@ async function speakWithVoiceCafe(text) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        input: text,                 // 要转换的文本
-        voice: 'ja-JP-NanamiNeural', // 日语女声，可换成 ja-JP-KeitaNeural 男声
-        speed: 1.0,                  // 语速
+        input: text,
+        voice: 'ja-JP-NanamiNeural',
+        speed: 1.0,
         pitch: '0',
         style: 'general'
       })
@@ -1520,16 +1515,26 @@ async function speakWithVoiceCafe(text) {
     toast('语音合成失败，请检查网络');
   }
 }
+
+function speakCurrentWord() {
+  const cur = state.queue[state.idx];
+  if (!cur) return;
+  speakWithVoiceCafe(cur.r || cur.w);
+}
   speakCurrentWord();
   playClick();
 });
 
 /* --- 点击单词本身也发音 --- */
-document.getElementById('wordDisplay').addEventListener('click', () => {
+document.getElementById('btnSpeak').addEventListener('click', (e) => {
+  e.stopPropagation();
   speakCurrentWord();
-  playClick();
 });
 
+/* --- 点击单词本身也发音 --- */
+document.getElementById('wordDisplay').addEventListener('click', () => {
+  speakCurrentWord();
+});
 /* --- 主页：模式选择 --- */
   document.getElementById('modeGrid').addEventListener('click', e => {
     const btn = e.target.closest('.mode-chip');
