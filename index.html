@@ -1486,24 +1486,6 @@ function openStats(){
     toast('语音加载失败，请检查网络');
   }
 }
-      // 调用你在 Supabase 部署的 tts-cached 函数
-    const { data, error } = await sb.functions.invoke('tts-cached', {
-      body: { text: textToSpeak, language: lang }
-    });
-
-    if (error) throw error;
-    if (!data || !data.audioUrl) throw new Error('未返回音频地址');
-
-    const audio = new Audio(data.audioUrl);
-    audio.onended = () => { if (btn) btn.classList.remove('speaking'); };
-    audio.onerror = () => { if (btn) btn.classList.remove('speaking'); };
-    await audio.play();
-  } catch (e) {
-    console.error('[发音] Edge TTS 请求失败:', e);
-    if (btn) btn.classList.remove('speaking');
-    toast('语音加载失败，请检查网络');
-  }
-}
 /* =========================================================================
    事件绑定
    ========================================================================= */
@@ -1514,10 +1496,6 @@ document.getElementById('btnSpeak').addEventListener('click', (e) => {
   speakCurrentWord();
 });
 
-/* --- 点击单词本身也发音 --- */
-document.getElementById('wordDisplay').addEventListener('click', () => {
-  speakCurrentWord();
-});
 /* --- 点击单词本身也发音 --- */
 document.getElementById('wordDisplay').addEventListener('click', () => {
   speakCurrentWord();
