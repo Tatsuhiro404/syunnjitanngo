@@ -1458,117 +1458,66 @@ function openStats(){
 
   show('stats');
 }
-  /* =========================================================================
-   TTS 发音模块（阿里云主方案 + VoiceCafe降级方案）
-   ========================================================================= */
+  async function speakCurrentWord() {
+  const cur = state.queue[state.idx];
+  if (!cur) return;
+  const textToSpeak = cur.r || cur.w;
+  const lang = cur.lang || "auto";
 
-/* —— 阿里云 TTS（带缓存版）主方案 —— */
-async function speakWithAliyun(text) {
-  if (!text) return;
   const btn = document.getElementById('btnSpeak');
   if (btn) btn.classList.add('speaking');
 
   try {
-    // 调用刚才部署的 tts-cached 函数，只需要传 text
+    // 调用你在 Supabase 部署的 tts-cached 函数
     const { data, error } = await sb.functions.invoke('tts-cached', {
-      body: { text: text }
+      body: { text: textToSpeak, language: lang }
     });
 
     if (error) throw error;
     if (!data || !data.audioUrl) throw new Error('未返回音频地址');
 
     const audio = new Audio(data.audioUrl);
-    
     audio.onended = () => { if (btn) btn.classList.remove('speaking'); };
-    audio.onerror = () => { 
-      if (btn) btn.classList.remove('speaking'); 
-      throw new Error('音频播放失败');
-    };
-
+    audio.onerror = () => { if (btn) btn.classList.remove('speaking'); };
     await audio.play();
   } catch (e) {
+    console.error('[发音] Edge TTS 请求失败:', e);
     if (btn) btn.classList.remove('speaking');
-    throw e; // 抛给 speakCurrentWord 去决定是否降级到 VoiceCafe
+    toast('语音加载失败，请检查网络');
   }
 }
-/* —— VoiceCafe-TTS 备用方案 —— */
-async function speakWithVoiceCafe(text) {
-  if (!text) return;
-  const btn = document.getElementById('btnSpeak');
-  const API_URL = 'https://voice.pangjingshuo05.workers.dev/v1/audio/speech';
-
-  try {
-    if (btn) btn.classList.add('speaking');
-
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        input: text,
-        voice: 'ja-JP-NanamiNeural',
-        speed: 1.0,
-        pitch: '0',
-        style: 'general'
-      })
+      // 调用你在 Supabase 部署的 tts-cached 函数
+    const { data, error } = await sb.functions.invoke('tts-cached', {
+      body: { text: textToSpeak, language: lang }
     });
 
-    if (!response.ok) throw new Error(`VoiceCafe HTTP ${response.status}`);
+    if (error) throw error;
+    if (!data || !data.audioUrl) throw new Error('未返回音频地址');
 
-    const audioBlob = await response.blob();
-    const url = URL.createObjectURL(audioBlob);
-    const audio = new Audio(url);
-
-    audio.onended = () => {
-      if (btn) btn.classList.remove('speaking');
-      URL.revokeObjectURL(url);
-    };
-    audio.onerror = () => {
-      if (btn) btn.classList.remove('speaking');
-      URL.revokeObjectURL(url);
-      toast('发音播放失败');
-    };
-
+    const audio = new Audio(data.audioUrl);
+    audio.onended = () => { if (btn) btn.classList.remove('speaking'); };
+    audio.onerror = () => { if (btn) btn.classList.remove('speaking'); };
     await audio.play();
   } catch (e) {
-    console.warn('[发音] VoiceCafe 失败：', e);
+    console.error('[发音] Edge TTS 请求失败:', e);
     if (btn) btn.classList.remove('speaking');
-    throw e;
-  }
-}
-
-/* —— 主备切换逻辑 —— */
-async function speakCurrentWord() {
-  const cur = state.queue[state.idx];
-  if (!cur) return;
-  const textToSpeak = cur.r || cur.w;
-
-  // 1. 优先尝试阿里云 TTS
-  try {
-    await speakWithAliyun(textToSpeak);
-    console.log('[发音] 阿里云 TTS 成功');
-  } catch (e) {
-    // 2. 阿里云失败，自动降级到 VoiceCafe
-    console.warn('[发音] 阿里云失败，降级到 VoiceCafe:', e.message || e);
-    try {
-      await speakWithVoiceCafe(textToSpeak);
-      console.log('[发音] VoiceCafe 降级成功');
-    } catch (err) {
-      // 3. 两个都失败，提示用户
-      console.error('[发音] 所有 TTS 方案均失败:', err);
-      toast('语音合成失败，请检查网络');
-    }
+    toast('语音加载失败，请检查网络');
   }
 }
 /* =========================================================================
    事件绑定
    ========================================================================= */
 function bind(){
-  /* --- 发音按钮 --- */
+/* --- 发音按钮 --- */
 document.getElementById('btnSpeak').addEventListener('click', (e) => {
   e.stopPropagation();
   speakCurrentWord();
 });
 
+/* --- 点击单词本身也发音 --- */
+document.getElementById('wordDisplay').addEventListener('click', () => {
+  speakCurrentWord();
+});
 /* --- 点击单词本身也发音 --- */
 document.getElementById('wordDisplay').addEventListener('click', () => {
   speakCurrentWord();
