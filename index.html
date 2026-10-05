@@ -1473,7 +1473,7 @@ async function speakWithAliyun(text) {
     const { data, error } = await sb.functions.invoke('aliyun-tts', {
       body: { 
         text: text, 
-        voice: 'ja-JP-NanamiNeural' // ⚠️ 这里根据阿里云实际支持的日语发音人名称修改
+        voice: 'Serena' // ⚠️ 这里根据阿里云实际支持的发音人名称修改
       }
     });
 
