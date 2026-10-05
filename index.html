@@ -1786,7 +1786,43 @@ async function appendCloudWords(v,entries){
   await loadCloudData();
   return {parsed:entries.length,unique:unique.length};
 }
-async function replaceCloudWords(v,entries){if(!canEditVocab(v))throw Error('没有权限修改此词库');let q=sb.from('words').delete().eq('vocabulary_id',v.id);const {error:de}=await q;if(de)throw de;const rows=entries.map((e,i)=>({vocabulary_id:v.id,w:e.w,r:e.r||'',m:e.m||'',position:i}));if(rows.length){const {error}=await sb.from('words').insert(rows);if(error)throw error}await loadCloudData()}
+  async function replaceCloudWords(v, entries) {
+  if (!canEditVocab(v)) throw Error('没有权限修改此词库');
+
+  // 👇 新增：前端去重（保留最后修改的那一条，防止因重复数据导致保存失败）
+  const seen = new Set();
+  const uniqueEntries = [];
+  
+  // 倒序遍历，遇到重复时保留最新修改的版本
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const key = (entries[i].w || '').trim() + '|' + (entries[i].r || '').trim();
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueEntries.unshift(entries[i]); // 放到数组头部保持顺序
+    }
+  }
+
+  // 删除旧数据
+  let q = sb.from('words').delete().eq('vocabulary_id', v.id);
+  const { error: de } = await q;
+  if (de) throw de;
+
+  // 插入去重后的新数据（注意这里用的是 uniqueEntries）
+  const rows = uniqueEntries.map((e, i) => ({
+    vocabulary_id: v.id,
+    w: e.w,
+    r: e.r || '',
+    m: e.m || '',
+    position: i
+  }));
+
+  if (rows.length) {
+    const { error } = await sb.from('words').insert(rows);
+    if (error) throw error;
+  }
+  
+  await loadCloudData();
+}
 async function confirmImport(){
   if(!SESSION_USER){setStatus('请先登录','err');return}
   if(!previewEntries.length){setStatus('没有可导入的内容','err');return}
